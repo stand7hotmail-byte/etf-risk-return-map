@@ -1,0 +1,42 @@
+Windows PowerShell
+Copyright (C) Microsoft Corporation. All rights reserved.
+
+新機能と改善のために最新の PowerShell をインストールしてください!https://aka.ms/PSWindows
+
+PS C:\Users\stand\Desktop\etf_webapp>    python -m uvicorn app:app --reload
+INFO:     Will watch for changes in these directories: ['C:\\Users\\stand\\Desktop\\etf_webapp']
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [6852] using StatReload
+INFO:     Started server process [32132]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+C:\Users\stand\Desktop\etf_webapp\app.py:19: FutureWarning: YF.download() has changed argument auto_adjust default to True
+  data = yf.download(tickers, period="1y")
+[*********************100%***********************]  5 of 5 completed
+DEBUG: DataFrame Columns: MultiIndex([( 'Close', 'AGG'),
+            ( 'Close', 'GLD'),
+            ( 'Close', 'QQQ'),
+            ( 'Close', 'SPY'),
+            ( 'Close', 'VTI'),
+            (  'High', 'AGG'),
+            (  'High', 'GLD'),
+            (  'High', 'QQQ'),
+            (  'High', 'SPY'),
+            (  'High', 'VTI'),
+            (   'Low', 'AGG'),
+            (   'Low', 'GLD'),
+            (   'Low', 'QQQ'),
+            (   'Low', 'SPY'),
+            (   'Low', 'VTI'),
+            (  'Open', 'AGG'),
+            (  'Open', 'GLD'),
+            (  'Open', 'QQQ'),
+            (  'Open', 'SPY'),
+            (  'Open', 'VTI'),
+            ('Volume', 'AGG'),
+            ('Volume', 'GLD'),
+            ('Volume', 'QQQ'),
+            ('Volume', 'SPY'),
+            ('Volume', 'VTI')],
+           names=['Price', 'Ticker'])
+INFO:     127.0.0.1:54848 - "GET / HTTP/1.1" 200 OK
