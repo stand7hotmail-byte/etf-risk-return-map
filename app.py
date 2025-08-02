@@ -1,6 +1,8 @@
 
 from fastapi import FastAPI, Request
 from fastapi.templating import Jinja2Templates
+
+# This is a minor change to trigger a new Vercel deployment.
 import yfinance as yf
 import pandas as pd
 import plotly.express as px
