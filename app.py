@@ -1,18 +1,20 @@
-
 from fastapi import FastAPI, Request
 from fastapi.templating import Jinja2Templates
-
-# This is a minor change to trigger a new Vercel deployment.
+from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
 import yfinance as yf
 import pandas as pd
-import plotly.express as px
-import plotly.io as pio
 
 app = FastAPI()
+app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-@app.get("/")
+@app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
+
+@app.get("/data")
+async def get_etf_data():
     # --- 1. ETFティッカーリストの定義 ---
     tickers = ['SPY', 'QQQ', 'GLD', 'VTI', 'AGG'] # サンプルETF
 
@@ -37,25 +39,5 @@ async def read_root(request: Request):
         'Ticker': annual_returns.index
     })
 
-    # --- 5. Plotlyで散布図を作成 ---
-    fig = px.scatter(
-        result_df,
-        x='Risk',
-        y='Return',
-        text='Ticker', # 点の近くにティッカー名を表示
-        title='ETF Risk-Return Map (Annualized)'
-    )
-    fig.update_traces(textposition='top center')
-    fig.update_layout(
-        xaxis_title="Risk (Annualized Volatility)",
-        yaxis_title="Expected Return (Annualized)",
-    )
-
-    # --- 6. グラフをHTML形式に変換 ---
-    graph_html = pio.to_html(fig, full_html=False)
-
-    # --- 7. HTMLテンプレートにグラフを埋め込んで返す ---
-    return templates.TemplateResponse(
-        "index.html",
-        {"request": request, "graph_html": graph_html}
-    )
+    # --- 5. 結果をJSON形式で返す ---
+    return result_df.to_dict(orient='records')

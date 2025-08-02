@@ -2,6 +2,6 @@ fastapi
 uvicorn
 yfinance
 pandas
-plotly
+
 numpy
 Jinja2
