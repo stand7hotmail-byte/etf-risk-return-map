@@ -1,4 +1,5 @@
-from fastapi import FastAPI, Request
+
+from fastapi import FastAPI, Request, Query
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
@@ -9,14 +10,21 @@ app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
+# 拡張されたETFティッカーリスト
+ALL_ETF_TICKERS = ['SPY', 'VOO', 'QQQ', 'VTI', 'VXUS', 'BND', 'AGG', 'GLD', 'TLT', 'XLK', 'XLF', 'XLV', 'VNQ', 'IEMG', 'EFA']
+
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
+@app.get("/etf_list")
+async def get_etf_list():
+    return ALL_ETF_TICKERS
+
 @app.get("/data")
-async def get_etf_data():
-    # --- 1. ETFティッカーリストの定義 ---
-    tickers = ['SPY', 'QQQ', 'GLD', 'VTI', 'AGG'] # サンプルETF
+async def get_etf_data(tickers: list[str] = Query(ALL_ETF_TICKERS)): # デフォルトで全ティッカーを選択
+    if not tickers:
+        return [] # ティッカーが選択されていない場合は空のリストを返す
 
     # --- 2. yfinanceで株価データを取得 ---
     # 過去1年分のデータを取得
