@@ -3,40 +3,141 @@ Copyright (C) Microsoft Corporation. All rights reserved.
 
 新機能と改善のために最新の PowerShell をインストールしてください!https://aka.ms/PSWindows
 
-PS C:\Users\stand\Desktop\etf_webapp>    python -m uvicorn app:app --reload
+PS C:\Users\stand\Desktop\etf_webapp> python -m uvicorn app:app --reload
 INFO:     Will watch for changes in these directories: ['C:\\Users\\stand\\Desktop\\etf_webapp']
 INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
-INFO:     Started reloader process [6852] using StatReload
-INFO:     Started server process [32132]
+INFO:     Started reloader process [27664] using StatReload
+INFO:     Started server process [26988]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
-C:\Users\stand\Desktop\etf_webapp\app.py:19: FutureWarning: YF.download() has changed argument auto_adjust default to True
+INFO:     127.0.0.1:62454 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62454 - "GET /static/etf_map.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:62454 - "GET /etf_list HTTP/1.1" 200 OK
+C:\Users\stand\Desktop\etf_webapp\app.py:34: FutureWarning: YF.download() has changed argument auto_adjust default to True
   data = yf.download(tickers, period="1y")
-[*********************100%***********************]  5 of 5 completed
-DEBUG: DataFrame Columns: MultiIndex([( 'Close', 'AGG'),
-            ( 'Close', 'GLD'),
-            ( 'Close', 'QQQ'),
-            ( 'Close', 'SPY'),
-            ( 'Close', 'VTI'),
-            (  'High', 'AGG'),
-            (  'High', 'GLD'),
-            (  'High', 'QQQ'),
-            (  'High', 'SPY'),
-            (  'High', 'VTI'),
-            (   'Low', 'AGG'),
-            (   'Low', 'GLD'),
-            (   'Low', 'QQQ'),
-            (   'Low', 'SPY'),
-            (   'Low', 'VTI'),
-            (  'Open', 'AGG'),
-            (  'Open', 'GLD'),
-            (  'Open', 'QQQ'),
-            (  'Open', 'SPY'),
-            (  'Open', 'VTI'),
-            ('Volume', 'AGG'),
-            ('Volume', 'GLD'),
-            ('Volume', 'QQQ'),
-            ('Volume', 'SPY'),
-            ('Volume', 'VTI')],
-           names=['Price', 'Ticker'])
-INFO:     127.0.0.1:54848 - "GET / HTTP/1.1" 200 OK
+[*********************100%***********************]  15 of 15 completed
+INFO:     127.0.0.1:62454 - "GET /data?tickers=SPY&tickers=VOO&tickers=QQQ&tickers=VTI&tickers=VXUS&tickers=BND&tickers=AGG&tickers=GLD&tickers=TLT&tickers=XLK&tickers=XLF&tickers=XLV&tickers=VNQ&tickers=IEMG&tickers=EFA HTTP/1.1" 200 OK
+C:\Users\stand\Desktop\etf_webapp\app.py:70: FutureWarning: YF.download() has changed argument auto_adjust default to True
+  data = yf.download(tickers, period="1y")
+[*********************100%***********************]  15 of 15 completed
+INFO:     127.0.0.1:62455 - "GET /efficient_frontier?tickers=SPY&tickers=VOO&tickers=QQQ&tickers=VTI&tickers=VXUS&tickers=BND&tickers=AGG&tickers=GLD&tickers=TLT&tickers=XLK&tickers=XLF&tickers=XLV&tickers=VNQ&tickers=IEMG&tickers=EFA HTTP/1.1" 500 Internal Server Error
+ERROR:    Exception in ASGI application
+Traceback (most recent call last):
+  File "C:\Users\stand\AppData\Roaming\Python\Python313\site-packages\uvicorn\protocols\http\h11_impl.py", line 403, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.scope, self.receive, self.send
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\stand\AppData\Roaming\Python\Python313\site-packages\uvicorn\middleware\proxy_headers.py", line 60, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\stand\AppData\Roaming\Python\Python313\site-packages\fastapi\applications.py", line 1054, in __call__
+    await super().__call__(scope, receive, send)
+  File "C:\Users\stand\AppData\Roaming\Python\Python313\site-packages\starlette\applications.py", line 113, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\stand\AppData\Roaming\Python\Python313\site-packages\starlette\middleware\errors.py", line 186, in __call__
+    raise exc
+  File "C:\Users\stand\AppData\Roaming\Python\Python313\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "C:\Users\stand\AppData\Roaming\Python\Python313\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Users\stand\AppData\Roaming\Python\Python313\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\stand\AppData\Roaming\Python\Python313\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\stand\AppData\Roaming\Python\Python313\site-packages\starlette\routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\stand\AppData\Roaming\Python\Python313\site-packages\starlette\routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "C:\Users\stand\AppData\Roaming\Python\Python313\site-packages\starlette\routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "C:\Users\stand\AppData\Roaming\Python\Python313\site-packages\starlette\routing.py", line 78, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Users\stand\AppData\Roaming\Python\Python313\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\stand\AppData\Roaming\Python\Python313\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\stand\AppData\Roaming\Python\Python313\site-packages\starlette\routing.py", line 75, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "C:\Users\stand\AppData\Roaming\Python\Python313\site-packages\fastapi\routing.py", line 302, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "C:\Users\stand\AppData\Roaming\Python\Python313\site-packages\fastapi\routing.py", line 213, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\stand\Desktop\etf_webapp\app.py", line 93, in get_efficient_frontier
+    constraints_with_target = constraints + \
+                              ~~~~~~~~~~~~^~~
+                              ({'type': 'eq', 'fun': lambda x: portfolio_return(x, avg_returns) - target_return},)
+                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+TypeError: unsupported operand type(s) for +: 'dict' and 'tuple'
+C:\Users\stand\Desktop\etf_webapp\app.py:34: FutureWarning: YF.download() has changed argument auto_adjust default to True
+  data = yf.download(tickers, period="1y")
+[*********************100%***********************]  15 of 15 completed
+INFO:     127.0.0.1:62454 - "GET /data?tickers=SPY&tickers=VOO&tickers=QQQ&tickers=VTI&tickers=VXUS&tickers=BND&tickers=AGG&tickers=GLD&tickers=TLT&tickers=XLK&tickers=XLF&tickers=XLV&tickers=VNQ&tickers=IEMG&tickers=EFA HTTP/1.1" 200 OK
+C:\Users\stand\Desktop\etf_webapp\app.py:70: FutureWarning: YF.download() has changed argument auto_adjust default to True
+  data = yf.download(tickers, period="1y")
+[*********************100%***********************]  15 of 15 completed
+INFO:     127.0.0.1:62552 - "GET /efficient_frontier?tickers=SPY&tickers=VOO&tickers=QQQ&tickers=VTI&tickers=VXUS&tickers=BND&tickers=AGG&tickers=GLD&tickers=TLT&tickers=XLK&tickers=XLF&tickers=XLV&tickers=VNQ&tickers=IEMG&tickers=EFA HTTP/1.1" 500 Internal Server Error
+ERROR:    Exception in ASGI application
+Traceback (most recent call last):
+  File "C:\Users\stand\AppData\Roaming\Python\Python313\site-packages\uvicorn\protocols\http\h11_impl.py", line 403, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.scope, self.receive, self.send
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\stand\AppData\Roaming\Python\Python313\site-packages\uvicorn\middleware\proxy_headers.py", line 60, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\stand\AppData\Roaming\Python\Python313\site-packages\fastapi\applications.py", line 1054, in __call__
+    await super().__call__(scope, receive, send)
+  File "C:\Users\stand\AppData\Roaming\Python\Python313\site-packages\starlette\applications.py", line 113, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\stand\AppData\Roaming\Python\Python313\site-packages\starlette\middleware\errors.py", line 186, in __call__
+    raise exc
+  File "C:\Users\stand\AppData\Roaming\Python\Python313\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "C:\Users\stand\AppData\Roaming\Python\Python313\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Users\stand\AppData\Roaming\Python\Python313\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\stand\AppData\Roaming\Python\Python313\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\stand\AppData\Roaming\Python\Python313\site-packages\starlette\routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\stand\AppData\Roaming\Python\Python313\site-packages\starlette\routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "C:\Users\stand\AppData\Roaming\Python\Python313\site-packages\starlette\routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "C:\Users\stand\AppData\Roaming\Python\Python313\site-packages\starlette\routing.py", line 78, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Users\stand\AppData\Roaming\Python\Python313\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\stand\AppData\Roaming\Python\Python313\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\stand\AppData\Roaming\Python\Python313\site-packages\starlette\routing.py", line 75, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "C:\Users\stand\AppData\Roaming\Python\Python313\site-packages\fastapi\routing.py", line 302, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "C:\Users\stand\AppData\Roaming\Python\Python313\site-packages\fastapi\routing.py", line 213, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\stand\Desktop\etf_webapp\app.py", line 93, in get_efficient_frontier
+    constraints_with_target = constraints + \
+                              ~~~~~~~~~~~~^~~
+                              ({'type': 'eq', 'fun': lambda x: portfolio_return(x, avg_returns) - target_return},)
+                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+TypeError: unsupported operand type(s) for +: 'dict' and 'tuple'
