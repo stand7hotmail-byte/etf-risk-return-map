@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ETF Risk-Return Map</title>
-    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script> <!-- より新しいバージョンを指定 -->
     <style>
         body {
             font-family: sans-serif;
@@ -55,8 +55,42 @@
     <div class="container">
         <h1>ETF Risk-Return Map</h1>
         <div id="etf-checkboxes"></div>
+        <label for="data-period-select">Data Period:</label>
+        <select id="data-period-select">
+            <option value="1y">1 Year</option>
+            <option value="3y">3 Years</option>
+            <option value="5y" selected>5 Years</option>
+            <option value="10y">10 Years</option>
+        </select>
         <button id="generate-map-btn">Generate Map</button>
         <div id="graph"></div>
+        <div id="portfolio-composition" style="margin-top: 20px; padding: 15px; border: 1px solid #ccc; border-radius: 8px; background-color: #f9f9f9;">
+            <h2>Max Sharpe Ratio Portfolio Composition</h2>
+            <div id="composition-details">Select ETFs and click 'Generate Map' to see composition.</div>
+        </div>
+
+        <div id="custom-portfolio-section" style="margin-top: 20px; padding: 15px; border: 1px solid #ccc; border-radius: 8px; background-color: #f9f9f9;">
+            <h2>Create Your Custom Portfolio</h2>
+            <div id="portfolio-sliders"></div>
+            <button id="calculate-custom-portfolio-btn" style="margin-top: 10px;">Calculate Custom Portfolio</button>
+            <div id="custom-portfolio-result" style="margin-top: 10px;"></div>
+        </div>
+
+        <div id="target-optimization-section" style="margin-top: 20px; padding: 15px; border: 1px solid #ccc; border-radius: 8px; background-color: #f9f9f9;">
+            <h2>Target Optimization</h2>
+            <p>Enter a target return or target risk to find the optimal portfolio.</p>
+            <div>
+                <label for="target-return-input">Target Return (%):</label>
+                <input type="number" id="target-return-input" step="0.01" min="0" max="100" placeholder="e.g., 10" style="width: 80px; margin-right: 10px;">
+                <button id="optimize-by-return-btn">Optimize by Return</button>
+            </div>
+            <div style="margin-top: 10px;">
+                <label for="target-risk-input">Target Risk (%):</label>
+                <input type="number" id="target-risk-input" step="0.01" min="0" max="100" placeholder="e.g., 15" style="width: 80px; margin-right: 10px;">
+                <button id="optimize-by-risk-btn">Optimize by Risk</button>
+            </div>
+            <div id="target-optimization-result" style="margin-top: 10px;"></div>
+        </div>
     </div>
     <script src="/static/etf_map.js"></script>
 </body>
