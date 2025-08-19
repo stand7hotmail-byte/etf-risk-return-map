@@ -7,35 +7,65 @@
     <title>ETF Risk-Return Map</title>
     <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script> <!-- より新しいバージョンを指定 -->
     <style>
+        * {
+            box-sizing: border-box;
+        }
         body {
-            font-family: sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
             padding: 20px;
+            background-color: #f4f7f6;
+            color: #333;
+            min-height: 100vh;
+            margin: 0;
         }
         .container {
-            width: 90%;
+            width: 100%;
             max-width: 1200px;
             margin-bottom: 20px;
+            padding: 0 10px; /* Add some horizontal padding */
+        }
+        .section-box {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background-color: #ffffff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        h2 {
+            color: #34495e;
+            margin-top: 0;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
         }
         #etf-checkboxes {
             display: flex;
             flex-wrap: wrap;
-            gap: 10px;
+            gap: 15px;
             margin-bottom: 20px;
-            border: 1px solid #ccc;
-            padding: 15px;
-            border-radius: 8px;
-            background-color: #f9f9f9;
+            /* border: 1px solid #ccc; */ /* Removed, now handled by .section-box */
+            /* padding: 15px; */ /* Removed, now handled by .section-box */
+            /* border-radius: 8px; */ /* Removed, now handled by .section-box */
+            /* background-color: #f9f9f9; */ /* Removed, now handled by .section-box */
         }
         #etf-checkboxes label {
             display: flex;
             align-items: center;
             cursor: pointer;
+            font-size: 0.95rem;
         }
         #etf-checkboxes input[type="checkbox"] {
-            margin-right: 5px;
+            margin-right: 8px;
+            transform: scale(1.1);
         }
         button {
             padding: 10px 20px;
@@ -45,9 +75,79 @@
             color: white;
             border: none;
             border-radius: 5px;
+            transition: background-color 0.2s ease;
         }
         button:hover {
             background-color: #0056b3;
+        }
+        button:active {
+            background-color: #004085;
+        }
+        select,
+        input[type="number"],
+        input[type="text"] { /* Added text type for general inputs */
+            padding: 8px 12px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 0.95rem;
+            margin-right: 10px;
+            max-width: 150px; /* Limit width for number inputs */
+        }
+        input[type="range"] {
+            width: calc(100% - 10px); /* Adjust width for range inputs */
+            margin-top: 5px;
+        }
+        label {
+            margin-right: 5px;
+            font-weight: bold;
+        }
+        /* Specific layout for constraint inputs */
+        #constraint-inputs div {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 5px;
+        }
+        #constraint-inputs div label {
+            flex-basis: 80px; /* Fixed width for ticker label */
+            text-align: right;
+        }
+        #constraint-inputs div input {
+            flex-grow: 1;
+            max-width: 100px; /* Adjust max-width for constraint inputs */
+        }
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 15px;
+            }
+            h1 {
+                font-size: 1.8rem;
+            }
+            h2 {
+                font-size: 1.3rem;
+            }
+            button,
+            select,
+            input[type="number"],
+            input[type="text"] {
+                width: 100%;
+                margin-right: 0;
+                margin-bottom: 10px;
+            }
+            #etf-checkboxes {
+                flex-direction: column;
+                gap: 8px;
+            }
+            #constraint-inputs div {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            #constraint-inputs div label {
+                text-align: left;
+                flex-basis: auto;
+            }
         }
     </style>
 </head>
@@ -55,6 +155,13 @@
     <div class="container">
         <h1>ETF Risk-Return Map</h1>
         <div id="etf-checkboxes"></div>
+
+        <div id="etf-constraints" class="section-box">
+            <h2>ETF Weight Constraints</h2>
+            <p>Set min/max percentage for selected ETFs. (e.g., 5 for 5%)</p>
+            <div id="constraint-inputs"></div>
+        </div>
+
         <label for="data-period-select">Data Period:</label>
         <select id="data-period-select">
             <option value="1y">1 Year</option>
@@ -64,19 +171,19 @@
         </select>
         <button id="generate-map-btn">Generate Map</button>
         <div id="graph"></div>
-        <div id="portfolio-composition" style="margin-top: 20px; padding: 15px; border: 1px solid #ccc; border-radius: 8px; background-color: #f9f9f9;">
+        <div id="portfolio-composition" class="section-box">
             <h2>Max Sharpe Ratio Portfolio Composition</h2>
             <div id="composition-details">Select ETFs and click 'Generate Map' to see composition.</div>
         </div>
 
-        <div id="custom-portfolio-section" style="margin-top: 20px; padding: 15px; border: 1px solid #ccc; border-radius: 8px; background-color: #f9f9f9;">
+        <div id="custom-portfolio-section" class="section-box">
             <h2>Create Your Custom Portfolio</h2>
             <div id="portfolio-sliders"></div>
             <button id="calculate-custom-portfolio-btn" style="margin-top: 10px;">Calculate Custom Portfolio</button>
             <div id="custom-portfolio-result" style="margin-top: 10px;"></div>
         </div>
 
-        <div id="target-optimization-section" style="margin-top: 20px; padding: 15px; border: 1px solid #ccc; border-radius: 8px; background-color: #f9f9f9;">
+        <div id="target-optimization-section" class="section-box">
             <h2>Target Optimization</h2>
             <p>Enter a target return or target risk to find the optimal portfolio.</p>
             <div>
@@ -90,6 +197,29 @@
                 <button id="optimize-by-risk-btn">Optimize by Risk</button>
             </div>
             <div id="target-optimization-result" style="margin-top: 10px;"></div>
+        </div>
+
+        <div id="historical-performance-section" class="section-box">
+            <h2>Historical Performance</h2>
+            <p>View the cumulative historical performance of selected ETFs.</p>
+            <button id="show-historical-performance-btn">Show Historical Performance</button>
+            <div id="historical-performance-graph" style="margin-top: 10px;"></div>
+        </div>
+
+        <div id="monte-carlo-section" class="section-box">
+            <h2>Monte Carlo Simulation</h2>
+            <p>Simulate future portfolio returns based on historical data.</p>
+            <div>
+                <label for="num-simulations-input">Number of Simulations:</label>
+                <input type="number" id="num-simulations-input" value="1000" min="100" step="100" style="width: 80px; margin-right: 10px;">
+            </div>
+            <div style="margin-top: 10px;">
+                <label for="simulation-days-input">Simulation Days (e.g., 252 for 1 year):</label>
+                <input type="number" id="simulation-days-input" value="252" min="1" step="1" style="width: 80px; margin-right: 10px;">
+            </div>
+            <button id="run-monte-carlo-btn" style="margin-top: 10px;">Run Simulation</button>
+            <div id="monte-carlo-graph" style="margin-top: 10px;"></div>
+            <div id="monte-carlo-results" style="margin-top: 10px;"></div>
         </div>
     </div>
     <script src="/static/etf_map.js"></script>

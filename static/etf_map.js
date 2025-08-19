@@ -1,5 +1,6 @@
 document.addEventListener('DOMContentLoaded', function() {
     const etfCheckboxesDiv = document.getElementById('etf-checkboxes');
+    const constraintInputsDiv = document.getElementById('constraint-inputs');
     const generateMapBtn = document.getElementById('generate-map-btn');
     const dataPeriodSelect = document.getElementById('data-period-select');
     const compositionDetailsDiv = document.getElementById('composition-details');
@@ -11,6 +12,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const targetRiskInput = document.getElementById('target-risk-input');
     const optimizeByRiskBtn = document.getElementById('optimize-by-risk-btn');
     const targetOptimizationResultDiv = document.getElementById('target-optimization-result');
+    const showHistoricalPerformanceBtn = document.getElementById('show-historical-performance-btn');
+    const historicalPerformanceGraphDiv = document.getElementById('historical-performance-graph');
+    const numSimulationsInput = document.getElementById('num-simulations-input');
+    const simulationDaysInput = document.getElementById('simulation-days-input');
+    const runMonteCarloBtn = document.getElementById('run-monte-carlo-btn');
+    const monteCarloGraphDiv = document.getElementById('monte-carlo-graph');
+    const monteCarloResultsDiv = document.getElementById('monte-carlo-results');
 
     let currentWeights = {}; // グローバル変数として定義
 
@@ -147,6 +155,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const period = dataPeriodSelect.value;
 
+        // 現在の制約を取得
+        const currentConstraints = {};
+        selectedTickers.forEach(ticker => {
+            const minInput = constraintInputsDiv.querySelector(`input.constraint-min[data-ticker="${ticker}"]`);
+            const maxInput = constraintInputsDiv.querySelector(`input.constraint-max[data-ticker="${ticker}"]`);
+            if (minInput && maxInput) {
+                currentConstraints[ticker] = {
+                    min: parseFloat(minInput.value),
+                    max: parseFloat(maxInput.value)
+                };
+            }
+        });
+
         try {
             const response = await fetch('/optimize_by_return', {
                 method: 'POST',
@@ -156,7 +177,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 body: JSON.stringify({
                     tickers: selectedTickers,
                     target_value: targetReturn,
-                    period: period
+                    period: period,
+                    constraints: currentConstraints
                 })
             });
             const result = await response.json();
@@ -171,6 +193,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <p><strong>Target Return:</strong> ${(targetReturn * 100).toFixed(2)}%</p>
                 <p><strong>Achieved Return:</strong> ${(result.Return * 100).toFixed(2)}%</p>
                 <p><strong>Risk:</strong> ${(result.Risk * 100).toFixed(2)}%</p>
+                <p><strong>Sortino Ratio:</strong> ${result.SortinoRatio.toFixed(2)}</p>
                 <h4>Composition:</h4>
                 <table>
                     <thead><tr><th>ETF</th><th>Weight</th></tr></thead>
@@ -225,6 +248,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const period = dataPeriodSelect.value;
 
+        // 現在の制約を取得
+        const currentConstraints = {};
+        selectedTickers.forEach(ticker => {
+            const minInput = constraintInputsDiv.querySelector(`input.constraint-min[data-ticker="${ticker}"]`);
+            const maxInput = constraintInputsDiv.querySelector(`input.constraint-max[data-ticker="${ticker}"]`);
+            if (minInput && maxInput) {
+                currentConstraints[ticker] = {
+                    min: parseFloat(minInput.value),
+                    max: parseFloat(maxInput.value)
+                };
+            }
+        });
+
         try {
             const response = await fetch('/optimize_by_risk', {
                 method: 'POST',
@@ -234,7 +270,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 body: JSON.stringify({
                     tickers: selectedTickers,
                     target_value: targetRisk,
-                    period: period
+                    period: period,
+                    constraints: currentConstraints
                 })
             });
             const result = await response.json();
@@ -249,6 +286,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <p><strong>Target Risk:</strong> ${(targetRisk * 100).toFixed(2)}%</p>
                 <p><strong>Achieved Risk:</strong> ${(result.Risk * 100).toFixed(2)}%</p>
                 <p><strong>Return:</strong> ${(result.Return * 100).toFixed(2)}%</p>
+                <p><strong>Sortino Ratio:</strong> ${result.SortinoRatio.toFixed(2)}</p>
                 <h4>Composition:</h4>
                 <table>
                     <thead><tr><th>ETF</th><th>Weight</th></tr></thead>
@@ -281,6 +319,151 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (error) {
             console.error('Error optimizing by risk:', error);
             targetOptimizationResultDiv.innerHTML = '<p style="color: red;">An error occurred while optimizing by risk.</p>';
+        }
+    });
+
+    // Show Historical Performanceボタンのイベントリスナー
+    showHistoricalPerformanceBtn.addEventListener('click', async () => {
+        const selectedTickers = Array.from(etfCheckboxesDiv.querySelectorAll('input[type="checkbox"]:checked'))
+                                    .map(checkbox => checkbox.value);
+
+        if (selectedTickers.length === 0) {
+            alert('Please select at least one ETF to show historical performance.');
+            historicalPerformanceGraphDiv.innerHTML = '';
+            return;
+        }
+
+        const period = dataPeriodSelect.value;
+
+        try {
+            const response = await fetch('/historical_performance', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    tickers: selectedTickers,
+                    period: period
+                })
+            });
+            const historicalData = await response.json();
+
+            if (historicalData.error) {
+                historicalPerformanceGraphDiv.innerHTML = `<p style="color: red;">Error: ${historicalData.error}</p>`;
+                return;
+            }
+
+            const traces = [];
+            for (const ticker in historicalData.cumulative_returns) {
+                traces.push({
+                    x: historicalData.dates,
+                    y: historicalData.cumulative_returns[ticker],
+                    mode: 'lines',
+                    name: ticker,
+                    hovertemplate:
+                        '<b>Date:</b> %{x}<br>' +
+                        '<b>Cumulative Return:</b> %{y:.2%}'
+                });
+            }
+
+            const layout = {
+                title: 'Cumulative Historical Performance',
+                xaxis: { title: 'Date' },
+                yaxis: { title: 'Cumulative Return' }
+            };
+
+            Plotly.newPlot('historical-performance-graph', traces, layout);
+
+        } catch (error) {
+            console.error('Error fetching historical performance:', error);
+            historicalPerformanceGraphDiv.innerHTML = '<p style="color: red;">An error occurred while fetching historical performance.</p>';
+        }
+    });
+
+    // Run Monte Carlo Simulationボタンのイベントリスナー
+    runMonteCarloBtn.addEventListener('click', async () => {
+        const selectedTickers = Array.from(etfCheckboxesDiv.querySelectorAll('input[type="checkbox"]:checked'))
+                                    .map(checkbox => checkbox.value);
+
+        if (selectedTickers.length === 0) {
+            alert('Please select at least one ETF to run Monte Carlo simulation.');
+            monteCarloGraphDiv.innerHTML = '';
+            monteCarloResultsDiv.innerHTML = '';
+            return;
+        }
+
+        const period = dataPeriodSelect.value;
+        const numSimulations = parseInt(numSimulationsInput.value);
+        const simulationDays = parseInt(simulationDaysInput.value);
+
+        if (isNaN(numSimulations) || numSimulations <= 0) {
+            alert('Please enter a valid number of simulations.');
+            return;
+        }
+        if (isNaN(simulationDays) || simulationDays <= 0) {
+            alert('Please enter a valid number of simulation days.');
+            return;
+        }
+
+        try {
+            const response = await fetch('/monte_carlo_simulation', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    tickers: selectedTickers,
+                    period: period,
+                    num_simulations: numSimulations,
+                    simulation_days: simulationDays
+                })
+            });
+            const simulationResults = await response.json();
+
+            if (simulationResults.error) {
+                monteCarloResultsDiv.innerHTML = `<p style="color: red;">Error: ${simulationResults.error}</p>`;
+                return;
+            }
+
+            const finalReturns = simulationResults.final_returns;
+
+            // ヒストグラムのプロット
+            const trace = {
+                x: finalReturns.map(r => r * 100), // パーセンテージに変換
+                type: 'histogram',
+                marker: { color: 'rgba(100, 149, 237, 0.7)' }
+            };
+
+            const layout = {
+                title: 'Monte Carlo Simulation: Distribution of Final Returns',
+                xaxis: { title: 'Final Return (%)' },
+                yaxis: { title: 'Frequency' }
+            };
+
+            Plotly.newPlot('monte-carlo-graph', [trace], layout);
+
+            // 統計情報の表示
+            const meanReturn = (finalReturns.reduce((a, b) => a + b, 0) / finalReturns.length) * 100;
+            const sortedReturns = [...finalReturns].sort((a, b) => a - b);
+            const percentile5 = sortedReturns[Math.floor(0.05 * sortedReturns.length)] * 100;
+            const percentile95 = sortedReturns[Math.floor(0.95 * sortedReturns.length)] * 100;
+
+            const var95 = simulationResults.var_95 * 100;
+            const cvar95 = simulationResults.cvar_95 * 100;
+
+            monteCarloResultsDiv.innerHTML = `
+                <h3>Simulation Results</h3>
+                <p><strong>Mean Final Return:</strong> ${meanReturn.toFixed(2)}%</p>
+                <p><strong>5th Percentile Return:</strong> ${percentile5.toFixed(2)}%</p>
+                <p><strong>95th Percentile Return:</strong> ${percentile95.toFixed(2)}%</p>
+                <p><strong>VaR (95%):</strong> ${var95.toFixed(2)}%</p>
+                <p><strong>CVaR (95%):</strong> ${cvar95.toFixed(2)}%</p>
+                <p>This simulation assumes historical volatility and correlations remain constant.</p>
+            `;
+
+        } catch (error) {
+            console.error('Error running Monte Carlo simulation:', error);
+            monteCarloResultsDiv.innerHTML = '<p style="color: red;">An error occurred while running the simulation.</p>';
         }
     });
 
@@ -331,6 +514,35 @@ document.addEventListener('DOMContentLoaded', function() {
             // 現時点では、個々のスライダーの表示のみを更新
         }
 
+        // ETF制約入力フィールドを生成
+        constraintInputsDiv.innerHTML = ''; // 既存の制約入力をクリア
+        const etfConstraints = {}; // グローバルまたは適切なスコープで定義
+
+        selectedTickers.forEach(ticker => {
+            const constraintRow = document.createElement('div');
+            constraintRow.style.marginBottom = '5px';
+            constraintRow.innerHTML = `
+                <label>${ticker}:</label>
+                Min: <input type="number" class="constraint-min" data-ticker="${ticker}" value="0" min="0" max="100" step="0.01" style="width: 60px;">
+                Max: <input type="number" class="constraint-max" data-ticker="${ticker}" value="100" min="0" max="100" step="0.01" style="width: 60px;">
+            `;
+            constraintInputsDiv.appendChild(constraintRow);
+            etfConstraints[ticker] = { min: 0, max: 100 }; // 初期値
+        });
+
+        // 制約入力フィールドのイベントリスナーを設定
+        constraintInputsDiv.querySelectorAll('input[type="number"]').forEach(input => {
+            input.onchange = (event) => {
+                const ticker = event.target.dataset.ticker;
+                const value = parseFloat(event.target.value);
+                if (event.target.classList.contains('constraint-min')) {
+                    etfConstraints[ticker].min = value;
+                } else if (event.target.classList.contains('constraint-max')) {
+                    etfConstraints[ticker].max = value;
+                }
+            };
+        });
+
         // 初期表示時にカスタムポートフォリオの結果をクリア
         customPortfolioResultDiv.innerHTML = '';
 
@@ -338,6 +550,7 @@ document.addEventListener('DOMContentLoaded', function() {
         selectedTickers.forEach(ticker => queryParams.append('tickers', ticker));
         const period = dataPeriodSelect.value;
         queryParams.append('period', period);
+        queryParams.append('constraints', JSON.stringify(etfConstraints));
 
         // ETFデータ、効率的フロンティアデータ、リスクフリーレートを並行してフェッチ
         Promise.all([
