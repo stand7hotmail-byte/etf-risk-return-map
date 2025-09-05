@@ -1,4 +1,7 @@
-from fastapi import FastAPI, Request, Query
+
+
+from fastapi import FastAPI, Request, Query, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
@@ -7,12 +10,247 @@ import pandas as pd
 import numpy as np
 from scipy.optimize import minimize
 from pydantic import BaseModel
+from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, Text
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker, Session
+from passlib.context import CryptContext
+from datetime import datetime, timedelta
+from typing import Optional
+import json
+from jose import jwt, JWTError
+import firebase_admin
+from firebase_admin import credentials, auth
+
+# Firebase Admin SDKの初期化
+cred = credentials.Certificate("C:\\Users\\stand\\Desktop\\etf_webapp\\etf-webapp-firebase-adminsdk-fbsvc-96649b4b25.json")
+firebase_admin.initialize_app(cred)
+
 
 app = FastAPI()
+
+# データベース設定
+SQLALCHEMY_DATABASE_URL = "sqlite:///./sql_app.db"
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = declarative_base()
+
+# パスワードハッシュ化
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+# データベースモデル
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String, unique=True, index=True)
+    hashed_password = Column(String)
+
+class Portfolio(Base):
+    __tablename__ = "portfolios"
+
+    id = Column(Integer, primary_key=True, index=True)
+    owner_id = Column(Integer, index=True) # User ID
+    name = Column(String, index=True)
+    data = Column(Text) # JSON string of portfolio data
+    created_at = Column(DateTime, default=datetime.now)
+
+# データベーステーブルの作成
+Base.metadata.create_all(bind=engine)
+
+# データベースセッションの依存性注入
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-# 拡張されたETFティッカーリスト
+# JWT認証設定
+SECRET_KEY = "your-secret-key" # 本番環境では環境変数から取得すること
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+def verify_password(plain_password, hashed_password):
+    return pwd_context.verify(plain_password, hashed_password)
+
+def get_password_hash(password):
+    return pwd_context.hash(password)
+
+def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.utcnow() + expires_delta
+    else:
+        expire = datetime.utcnow() + timedelta(minutes=15)
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload.get("sub")
+        if username is None:
+            raise credentials_exception
+        token_data = TokenData(username=username)
+    except JWTError:
+        raise credentials_exception
+    user = db.query(User).filter(User.username == token_data.username).first()
+    if user is None:
+        raise credentials_exception
+    return user
+
+# Pydanticモデル (認証用)
+class UserCreate(BaseModel):
+    username: str
+    password: str
+
+class UserInDB(BaseModel):
+    username: str
+    hashed_password: str
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+class TokenData(BaseModel):
+    username: Optional[str] = None
+
+class GoogleToken(BaseModel):
+    token: str
+
+# ユーザー登録エンドポイント
+@app.post("/register", response_model=UserInDB)
+async def register_user(user: UserCreate, db: Session = Depends(get_db)):
+    hashed_password = get_password_hash(user.password)
+    db_user = User(username=user.username, hashed_password=hashed_password)
+    try:
+        db.add(db_user)
+        db.commit()
+        db.refresh(db_user)
+        return db_user
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Username already registered")
+
+# ログインエンドポイント
+@app.post("/token", response_model=Token)
+async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.username == form_data.username).first()
+    if not user or not verify_password(form_data.password, user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": user.username}, expires_delta=access_token_expires
+    )
+    return {"access_token": access_token, "token_type": "bearer"}
+
+
+# Googleログイン用エンドポイント
+@app.post("/token/google", response_model=Token)
+async def login_google(google_token: GoogleToken, db: Session = Depends(get_db)):
+    try:
+        # Firebase IDトークンを検証
+        decoded_token = auth.verify_id_token(google_token.token)
+        email = decoded_token.get("email")
+        if not email:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email not found in Google token.",
+            )
+
+    except auth.InvalidIdTokenError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Invalid Google token: {e}",
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"An error occurred: {e}",
+        )
+
+    # データベースでユーザーを検索または作成
+    user = db.query(User).filter(User.username == email).first()
+    if not user:
+        # ユーザーが存在しない場合は、新しいユーザーを作成
+        # Googleログインユーザーはパスワードを持たないため、hashed_passwordは空にする
+        new_user = User(username=email, hashed_password="")
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
+        user = new_user
+
+    # 既存のシステムと同じように、内部用のJWTトークンを生成して返す
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": user.username}, expires_delta=access_token_expires
+    )
+    return {"access_token": access_token, "token_type": "bearer"}
+
+
+# ポートフォリオ保存エンドポイント
+@app.post("/save_portfolio")
+async def save_user_portfolio(portfolio_data: dict, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    portfolio_name = portfolio_data.get("name", "Untitled Portfolio")
+    portfolio_content = json.dumps(portfolio_data.get("content", {}))
+
+    db_portfolio = Portfolio(
+        owner_id=current_user.id,
+        name=portfolio_name,
+        data=portfolio_content
+    )
+    db.add(db_portfolio)
+    db.commit()
+    db.refresh(db_portfolio)
+    return {"message": "Portfolio saved successfully!", "portfolio_id": db_portfolio.id}
+
+# ポートフォリオ一覧取得エンドポイント
+@app.get("/list_portfolios")
+async def list_user_portfolios(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    portfolios = db.query(Portfolio).filter(Portfolio.owner_id == current_user.id).all()
+    return [{
+        "id": p.id,
+        "name": p.name,
+        "created_at": p.created_at.isoformat()
+    } for p in portfolios]
+
+# ポートフォリオ読み込みエンドポイント
+@app.get("/load_portfolio/{portfolio_id}")
+async def load_user_portfolio(portfolio_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    portfolio = db.query(Portfolio).filter(Portfolio.id == portfolio_id, Portfolio.owner_id == current_user.id).first()
+    if not portfolio:
+        raise HTTPException(status_code=404, detail="Portfolio not found")
+    return json.loads(portfolio.data)
+
+# ポートフォリオ削除エンドポイント
+@app.delete("/delete_portfolio/{portfolio_id}")
+async def delete_user_portfolio(portfolio_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    portfolio = db.query(Portfolio).filter(Portfolio.id == portfolio_id, Portfolio.owner_id == current_user.id).first()
+    if not portfolio:
+        raise HTTPException(status_code=404, detail="Portfolio not found")
+    db.delete(portfolio)
+    db.commit()
+    return {"message": "Portfolio deleted successfully!"}
+
+# 既存のETFティッカーリスト
 ALL_ETF_TICKERS = ['SPY', 'VOO', 'QQQ', 'VTI', 'VXUS', 'BND', 'AGG', 'GLD', 'TLT', 'XLK', 'XLF', 'XLV', 'VNQ', 'IEMG', 'EFA']
 
 # リスクフリーレート (年率)
@@ -78,8 +316,8 @@ def portfolio_sharpe_ratio(weights, avg_returns, cov_matrix, risk_free_rate):
 def portfolio_downside_deviation(weights, returns, risk_free_rate):
     portfolio_returns = np.dot(returns, weights)
     downside_returns = portfolio_returns[portfolio_returns < risk_free_rate]
-    if len(downside_returns) == 0:
-        return 0.0 # No downside returns, so downside deviation is 0
+    if len(downside_returns) == 0: # No downside returns, so downside deviation is 0
+        return 0.0 
     return np.sqrt(np.mean((downside_returns - risk_free_rate)**2)) * (252**0.5) # Annualized
 
 def portfolio_sortino_ratio(weights, avg_returns, returns, cov_matrix, risk_free_rate):
@@ -180,7 +418,7 @@ async def get_efficient_frontier(tickers: list[str] = Query(ALL_ETF_TICKERS), pe
                 filtered_frontier.append(efficient_frontier_points[i])
             # または、リスクが同じでリターンが大きい場合
             elif efficient_frontier_points[i]['Risk'] == filtered_frontier[-1]['Risk'] and \
-                 efficient_frontier_points[i]['Return'] > filtered_frontier[-1]['Return']:
+                 filtered_frontier[i]['Return'] > filtered_frontier[-1]['Return']:
                 filtered_frontier[-1] = efficient_frontier_points[i] # より良い点に置き換え
 
     if not filtered_frontier:
@@ -208,6 +446,9 @@ class MonteCarloSimulationRequest(BaseModel):
     period: str = "5y"
     num_simulations: int
     simulation_days: int
+
+class CSVAnalysisRequest(BaseModel):
+    csv_data: str
 
 @app.post("/custom_portfolio_data")
 async def calculate_custom_portfolio(request: CustomPortfolioRequest):
@@ -453,3 +694,43 @@ async def run_monte_carlo_simulation(request: MonteCarloSimulationRequest):
 
     except Exception as e:
         return {"error": f"Error running Monte Carlo simulation: {str(e)}"}
+
+@app.post("/analyze_csv_data")
+async def analyze_csv_data(request: CSVAnalysisRequest):
+    import io
+
+    try:
+        # CSVデータをDataFrameに読み込む
+        data = pd.read_csv(io.StringIO(request.csv_data))
+
+        # 'Date'列をインデックスに設定し、日付形式に変換
+        if 'Date' not in data.columns:
+            raise ValueError("CSV must contain a 'Date' column.")
+        data['Date'] = pd.to_datetime(data['Date'])
+        data = data.set_index('Date')
+
+        # 数値列のみを選択（ティッカー列）
+        numeric_cols = data.select_dtypes(include=np.number).columns
+        if numeric_cols.empty:
+            raise ValueError("No numeric (ticker) columns found in CSV.")
+        data = data[numeric_cols]
+
+        # 日次リターンの計算
+        returns = data.pct_change().dropna()
+
+        # 年率リスク・リターンの計算 (252営業日として計算)
+        annual_returns = returns.mean() * 252
+        annual_volatility = returns.std() * (252 ** 0.5)
+
+        # 結果をまとめる
+        result_df = pd.DataFrame({
+            'Return': annual_returns,
+            'Risk': annual_volatility,
+            'Ticker': annual_returns.index
+        })
+
+        # 結果をJSON形式で返す
+        return result_df.to_dict(orient='records')
+
+    except Exception as e:
+        return {"error": f"Error analyzing CSV data: {str(e)}"}

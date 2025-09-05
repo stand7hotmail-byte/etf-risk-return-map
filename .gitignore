@@ -1,1 +1,13 @@
+# Python cache
 __pycache__/
+*.pyc
+
+# Database
+sql_app.db
+
+# Logs
+エラーログ.txt
+
+# Secrets
+# Firebase service account key
+etf-webapp-firebase-adminsdk-fbsvc-96649b4b25.json

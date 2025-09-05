@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -6,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ETF Risk-Return Map</title>
     <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script> <!-- より新しいバージョンを指定 -->
+    <script src="/static/jwt-decode.min.js"></script> <!-- Local jwt-decode.min.js -->
     <style>
         * {
             box-sizing: border-box;
@@ -152,6 +152,42 @@
     </style>
 </head>
 <body>
+    <div class="auth-section section-box">
+        <h2>User Authentication</h2>
+        <div>
+            <label for="auth-username">Username:</label>
+            <input type="text" id="auth-username" placeholder="Enter username">
+        </div>
+        <div style="margin-top: 10px;">
+            <label for="auth-password">Password:</label>
+            <input type="password" id="auth-password" placeholder="Enter password">
+        </div>
+        <div style="margin-top: 15px;">
+            <button id="register-btn">Register</button>
+            <button id="login-btn" style="margin-left: 10px;">Login</button>
+            <button id="google-login-btn" style="margin-left: 10px;">Login with Google</button>
+            <button id="logout-btn" style="margin-left: 10px; display: none;">Logout</button>
+        </div>
+        <div id="auth-message" style="margin-top: 10px; color: red;"></div>
+        <div id="logged-in-user" style="margin-top: 10px; display: none;">Logged in as: <strong></strong></div>
+    </div>
+
+    <div class="portfolio-management-section section-box">
+        <h2>Portfolio Management</h2>
+        <div style="margin-top: 10px;">
+            <label for="portfolio-name-input">Portfolio Name:</label>
+            <input type="text" id="portfolio-name-input" placeholder="My Portfolio 1">
+            <button id="save-portfolio-btn">Save Portfolio</button>
+        </div>
+        <div style="margin-top: 10px;">
+            <button id="list-portfolios-btn">List My Portfolios</button>
+            <select id="saved-portfolios-select" style="margin-left: 10px;"></select>
+            <button id="load-portfolio-btn" style="margin-left: 10px;">Load Selected</button>
+            <button id="delete-portfolio-btn" style="margin-left: 10px;">Delete Selected</button>
+        </div>
+        <div id="portfolio-message" style="margin-top: 10px; color: blue;"></div>
+    </div>
+
     <div class="container">
         <h1>ETF Risk-Return Map</h1>
         <div id="etf-checkboxes"></div>
@@ -221,7 +257,21 @@
             <div id="monte-carlo-graph" style="margin-top: 10px;"></div>
             <div id="monte-carlo-results" style="margin-top: 10px;"></div>
         </div>
+
+        <div id="csv-upload-section" class="section-box">
+            <h2>Analyze from CSV</h2>
+            <p>Upload a CSV file containing historical ETF data.</p>
+            <p><strong>CSV Format:</strong> First column 'Date' (YYYY-MM-DD), subsequent columns are ETF Tickers (e.g., SPY, QQQ) with their Close prices.</p>
+            <input type="file" id="csv-file-input" accept=".csv" style="margin-top: 10px;">
+            <button id="analyze-csv-btn" style="margin-top: 10px;">Analyze CSV</button>
+            <div id="csv-analysis-results" style="margin-top: 10px;"></div>
+            <div id="csv-analysis-graph" style="margin-top: 10px;"></div>
+        </div>
     </div>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+
     <script src="/static/etf_map.js"></script>
 </body>
 </html>
