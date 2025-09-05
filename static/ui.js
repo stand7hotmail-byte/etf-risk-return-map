@@ -1,0 +1,1 @@
+// Handles all UI updates and DOM manipulation

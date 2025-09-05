@@ -399,7 +399,7 @@ async def get_efficient_frontier(tickers: list[str] = Query(ALL_ETF_TICKERS), pe
                 max_sharpe_ratio = sharpe
                 tangency_portfolio = {'Risk': risk, 'Return': ret, 'SharpeRatio': sharpe, 'SortinoRatio': sortino}
                 # 重みを保存
-                tangency_portfolio_weights = {tickers[i]: result.x[i] for i in range(num_assets)}
+                tangency_portfolio_weights = {ticker: weight for ticker, weight in zip(avg_returns.index, result.x)}
 
     if not efficient_frontier_points:
         return {"error": "No efficient frontier points could be generated with the given constraints. Try relaxing the constraints or selecting different ETFs."}

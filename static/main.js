@@ -320,8 +320,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         currentWeights[ticker] = parseFloat(weight);
                     }
                 }
-                // After restoring weights, calculate and show the custom portfolio point
-                calculateCustomPortfolioBtn.click();
+                // After restoring weights, directly call the calculation function
+                calculateAndDrawCustomPortfolio();
             }
         };
 
@@ -422,10 +422,10 @@ document.addEventListener('DOMContentLoaded', function() {
         .catch(error => console.error('Error fetching ETF list:', error));
 
     // マップ生成ボタンのイベントリスナー
-    generateMapBtn.addEventListener('click', generateMap);
+    generateMapBtn.addEventListener('click', () => generateMap());
 
-    // カスタムポートフォリオ計算ボタンのイベントリスナー
-    calculateCustomPortfolioBtn.addEventListener('click', async () => {
+    // カスタムポートフォリオ計算ロジック
+    async function calculateAndDrawCustomPortfolio() {
         const selectedTickers = Array.from(etfCheckboxesDiv.querySelectorAll('input[type="checkbox"]:checked'))
                                     .map(checkbox => checkbox.value);
 
@@ -444,8 +444,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 rawWeights[ticker] = parseFloat(slider.value);
                 totalWeight += rawWeights[ticker];
             } else {
-                // スライダーがない場合は、初期値（均等）を使用
-                rawWeights[ticker] = 100 / selectedTickers.length;
+                // スライダーがない場合は、currentWeightsから取得を試みる（ロード直後など）
+                rawWeights[ticker] = currentWeights[ticker] || 0;
                 totalWeight += rawWeights[ticker];
             }
         });
@@ -457,7 +457,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const normalizedWeights = {};
         selectedTickers.forEach(ticker => {
-            normalizedWeights[ticker] = rawWeights[ticker] / totalWeight;
+            normalizedWeights[ticker] = (rawWeights[ticker] || 0) / totalWeight;
         });
 
         const period = dataPeriodSelect.value;
@@ -491,7 +491,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const graphDiv = document.getElementById('graph');
             const currentData = graphDiv.data || [];
 
-            // 既存のCSVからのプロットを削除（もしあれば）
             const updatedData = currentData.filter(trace => trace.name !== 'Your Custom Portfolio');
 
             updatedData.push({
@@ -513,7 +512,10 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('Error calculating custom portfolio:', error);
             customPortfolioResultDiv.innerHTML = '<p style="color: red;">An error occurred while calculating your custom portfolio.</p>';
         }
-    });
+    }
+
+    // カスタムポートフォリオ計算ボタンのイベントリスナー
+    calculateCustomPortfolioBtn.addEventListener('click', calculateAndDrawCustomPortfolio);
 
     // Optimize by Returnボタンのイベントリスナー
     optimizeByReturnBtn.addEventListener('click', async () => {

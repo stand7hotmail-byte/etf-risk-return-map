@@ -1,0 +1,1 @@
+// Handles all communication with the backend API
