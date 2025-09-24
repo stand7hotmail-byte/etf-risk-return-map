@@ -250,8 +250,18 @@ async def delete_user_portfolio(portfolio_id: int, db: Session = Depends(get_db)
     db.commit()
     return {"message": "Portfolio deleted successfully!"}
 
-# 既存のETFティッカーリスト
-ALL_ETF_TICKERS = ['SPY', 'VOO', 'QQQ', 'VTI', 'VXUS', 'BND', 'AGG', 'GLD', 'TLT', 'XLK', 'XLF', 'XLV', 'VNQ', 'IEMG', 'EFA']
+# Load ETF definitions from CSV
+def load_etf_definitions():
+    try:
+        df = pd.read_csv("etf_list.csv")
+        # Convert to the nested dictionary format, using ticker as the key
+        return df.set_index('ticker').to_dict(orient='index')
+    except FileNotFoundError:
+        # Fallback or error handling if the CSV is not found
+        return {}
+
+ETF_DEFINITIONS = load_etf_definitions()
+ALL_ETF_TICKERS = list(ETF_DEFINITIONS.keys())
 
 # リスクフリーレート (年率)
 RISK_FREE_RATE = 0.02 # 例: 2%
@@ -262,7 +272,7 @@ async def read_root(request: Request):
 
 @app.get("/etf_list")
 async def get_etf_list():
-    return ALL_ETF_TICKERS
+    return ETF_DEFINITIONS
 
 @app.get("/risk_free_rate")
 async def get_risk_free_rate():
@@ -275,7 +285,7 @@ async def get_etf_data(tickers: list[str] = Query(ALL_ETF_TICKERS), period: str 
 
     # --- 2. yfinanceで株価データを取得 ---
     # 過去5年分のデータを取得
-    data = yf.download(tickers, period=period)
+    data = yf.download(tickers, period=period, group_by='ticker')
     # MultiIndexから'Close'のデータのみを抽出（これが実質的な調整済み終値）
     data = data.xs('Close', level='Price', axis=1)
 
@@ -335,7 +345,7 @@ async def get_efficient_frontier(tickers: list[str] = Query(ALL_ETF_TICKERS), pe
         return {"frontier_points": [], "tangency_portfolio": None, "tangency_portfolio_weights": {}}
 
     # --- 1. 株価データを取得 ---
-    data = yf.download(tickers, period=period)
+    data = yf.download(tickers, period=period, group_by='ticker')
     data = data.xs('Close', level='Price', axis=1)
 
     # --- 2. 日次リターンと共分散行列を計算 ---
@@ -450,6 +460,20 @@ class MonteCarloSimulationRequest(BaseModel):
 class CSVAnalysisRequest(BaseModel):
     csv_data: str
 
+class DcaSimulationRequest(BaseModel):
+    tickers: list[str]
+    weights: dict[str, float]
+    period: str = "5y"
+    investment_amount: float
+    frequency: str # 'monthly' or 'quarterly'
+
+class FutureDcaSimulationRequest(BaseModel):
+    portfolio_return: float
+    portfolio_risk: float
+    investment_amount: float
+    frequency: str
+    years: int
+
 @app.post("/custom_portfolio_data")
 async def calculate_custom_portfolio(request: CustomPortfolioRequest):
     tickers = request.tickers
@@ -460,7 +484,7 @@ async def calculate_custom_portfolio(request: CustomPortfolioRequest):
         return {"error": "No tickers provided."}
 
     # --- 1. 株価データを取得 ---
-    data = yf.download(tickers, period=period)
+    data = yf.download(tickers, period=period, group_by='ticker')
     data = data.xs('Close', level='Price', axis=1)
 
     # --- 2. 日次リターンと共分散行列を計算 ---
@@ -504,7 +528,7 @@ async def optimize_by_return(request: TargetOptimizationRequest):
     if not tickers:
         return {"error": "No tickers provided."}
 
-    data = yf.download(tickers, period=period)
+    data = yf.download(tickers, period=period, group_by='ticker')
     data = data.xs('Close', level='Price', axis=1)
     returns = data.pct_change().dropna()
     avg_returns = returns.mean() * 252
@@ -560,7 +584,7 @@ async def optimize_by_risk(request: TargetOptimizationRequest):
     if not tickers:
         return {"error": "No tickers provided."}
 
-    data = yf.download(tickers, period=period)
+    data = yf.download(tickers, period=period, group_by='ticker')
     data = data.xs('Close', level='Price', axis=1)
     returns = data.pct_change().dropna()
     avg_returns = returns.mean() * 252
@@ -734,3 +758,121 @@ async def analyze_csv_data(request: CSVAnalysisRequest):
 
     except Exception as e:
         return {"error": f"Error analyzing CSV data: {str(e)}"}
+
+
+@app.post("/dca_simulation")
+async def run_dca_simulation(request: DcaSimulationRequest):
+    try:
+        # 1. Get historical data
+        data = yf.download(request.tickers, period=request.period, interval="1d", group_by='ticker')['Close']
+        data.dropna(inplace=True)
+
+        # Ensure weights match the order of columns in the data
+        weights = np.array([request.weights.get(ticker, 0.0) for ticker in data.columns])
+        if np.sum(weights) == 0: return {"error": "Sum of weights is zero."}
+        weights = weights / np.sum(weights) # Normalize
+
+        # 2. Determine investment dates
+        if request.frequency == 'monthly':
+            # Resample to get the first business day of each month
+            investment_dates = data.resample('MS').first().index
+        elif request.frequency == 'quarterly':
+            # Resample to get the first business day of each quarter
+            investment_dates = data.resample('QS-JAN').first().index
+        else:
+            raise ValueError("Invalid frequency")
+
+        # 3. Run the simulation
+        total_shares = np.zeros(len(data.columns))
+        portfolio_values = []
+        total_invested = 0.0
+
+        # Create a Series to store portfolio value for each day
+        daily_portfolio_value = pd.Series(index=data.index, dtype=float)
+
+        current_investment_date_idx = 0
+
+        for date in data.index:
+            # Check if today is an investment day
+            if current_investment_date_idx < len(investment_dates) and date >= investment_dates[current_investment_date_idx]:
+                total_invested += request.investment_amount
+                # Get prices on the investment day
+                current_prices = data.loc[date].values
+                # Calculate new shares to buy, avoiding division by zero
+                additional_shares = (request.investment_amount * weights) / np.where(current_prices > 0, current_prices, np.inf)
+                total_shares += additional_shares
+                current_investment_date_idx += 1
+
+            # Calculate portfolio value for the current day
+            daily_portfolio_value[date] = np.dot(total_shares, data.loc[date].values)
+
+        # 4. Prepare results
+        final_value = daily_portfolio_value.iloc[-1]
+
+        return {
+            "dates": daily_portfolio_value.index.strftime('%Y-%m-%d').tolist(),
+            "portfolio_values": daily_portfolio_value.tolist(),
+            "total_invested": total_invested,
+            "final_value": final_value,
+            "profit_loss": final_value - total_invested
+        }
+
+    except Exception as e:
+        return {"error": f"Error running DCA simulation: {str(e)}"}
+
+
+@app.post("/future_dca_simulation")
+async def run_future_dca_simulation(request: FutureDcaSimulationRequest):
+    try:
+        # Simulation parameters
+        num_simulations = 500 # Number of Monte Carlo simulations
+        num_years = request.years
+        investment_amount = request.investment_amount
+        frequency = 12 if request.frequency == 'monthly' else 4
+        num_steps = num_years * frequency
+
+        # Convert annual portfolio stats to periodic stats
+        periodic_return = (1 + request.portfolio_return)**(1/frequency) - 1
+        periodic_risk = request.portfolio_risk / np.sqrt(frequency)
+
+        # Store final values for all simulations
+        all_scenarios = np.zeros((num_simulations, num_steps + 1))
+        total_invested_steps = np.zeros(num_steps + 1)
+
+        for i in range(num_simulations):
+            portfolio_value = 0
+            total_invested = 0
+            all_scenarios[i, 0] = 0
+            total_invested_steps[0] = 0
+
+            for t in range(1, num_steps + 1):
+                # Add new investment
+                portfolio_value += investment_amount
+                total_invested += investment_amount
+
+                # Simulate market return for the period
+                market_return = np.random.normal(periodic_return, periodic_risk)
+                portfolio_value *= (1 + market_return)
+
+                all_scenarios[i, t] = portfolio_value
+                total_invested_steps[t] = total_invested
+
+        # Calculate mean, upper (95th percentile), and lower (5th percentile) outcomes
+        mean_scenario = np.mean(all_scenarios, axis=0)
+        upper_scenario = np.percentile(all_scenarios, 95, axis=0)
+        lower_scenario = np.percentile(all_scenarios, 5, axis=0)
+
+        # Generate time labels (e.g., Year 1, Year 2...)
+        time_labels = [f"Year {t/frequency:.2f}" for t in range(num_steps + 1)]
+
+        return {
+            "time_labels": time_labels,
+            "mean_scenario": mean_scenario.tolist(),
+            "upper_scenario": upper_scenario.tolist(),
+            "lower_scenario": lower_scenario.tolist(),
+            "total_invested": total_invested_steps.tolist(),
+            "final_mean_value": mean_scenario[-1],
+        }
+
+    except Exception as e:
+        return {"error": f"Error running future DCA simulation: {str(e)}"}

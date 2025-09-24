@@ -7,14 +7,39 @@ document.addEventListener('DOMContentLoaded', function() {
     let currentWeights = {};
     let etfConstraints = {};
 
+    let etfDefinitions = {}; // To store ETF metadata
+
     // Initialize authentication
     initAuth();
+
+    // --- Event Listeners ---
+    ui.assetClassFilter.addEventListener('change', () => filterAndDisplayEtfs());
+    ui.regionFilter.addEventListener('change', () => filterAndDisplayEtfs());
+
+    function filterAndDisplayEtfs() {
+        const assetClass = ui.assetClassFilter.value;
+        const region = ui.regionFilter.value;
+
+        const filteredEtfs = Object.keys(etfDefinitions).filter(ticker => {
+            const etf = etfDefinitions[ticker];
+            const assetMatch = assetClass === 'all' || etf.asset_class === assetClass;
+            const regionMatch = region === 'all' || etf.region === region;
+            return assetMatch && regionMatch;
+        });
+
+        ui.createEtfCheckboxes(filteredEtfs, etfDefinitions, ui.etfCheckboxesDiv);
+    }
 
     // --- Main Application Logic ---
 
     async function generateMap(callback) {
         const selectedTickers = Array.from(ui.etfCheckboxesDiv.querySelectorAll('input[type="checkbox"]:checked'))
                                     .map(checkbox => checkbox.value);
+
+        if (selectedTickers.length > 20) {
+            alert("Please select 20 or fewer ETFs for analysis.");
+            return;
+        }
 
         if (selectedTickers.length === 0) {
             alert('Please select at least one ETF.');
@@ -337,11 +362,90 @@ document.addEventListener('DOMContentLoaded', function() {
         reader.readAsText(file);
     });
 
+    ui.runDcaSimulationBtn.addEventListener('click', async () => {
+        // This button now runs the FUTURE simulation
+        const investmentAmount = parseFloat(ui.dcaAmountInput.value);
+        if (isNaN(investmentAmount) || investmentAmount <= 0) return alert('Please enter a valid investment amount.');
+
+        const years = parseInt(ui.dcaYearsInput.value);
+        if (isNaN(years) || years <= 0) return alert('Please enter a valid number of years.');
+
+        const frequency = ui.dcaFrequencySelect.value;
+
+        // Get the current portfolio's risk and return from the last custom calculation
+        const riskText = ui.customPortfolioResultDiv.querySelector('p:nth-of-type(1)')?.textContent || '';
+        const returnText = ui.customPortfolioResultDiv.querySelector('p:nth-of-type(2)')?.textContent || '';
+        
+        const portfolioRiskMatch = riskText.match(/([\d\.]+)/);
+        const portfolioReturnMatch = returnText.match(/([\d\.]+)/);
+
+        if (!portfolioRiskMatch || !portfolioReturnMatch) {
+            return alert('Please calculate a custom portfolio first to establish its risk/return profile.');
+        }
+
+        const portfolioRisk = parseFloat(portfolioRiskMatch[1]) / 100;
+        const portfolioReturn = parseFloat(portfolioReturnMatch[1]) / 100;
+
+        try {
+            ui.dcaSimulationResultsDiv.innerHTML = '<p>Running future simulation...</p>';
+            const results = await api.runFutureDcaSimulation(portfolioReturn, portfolioRisk, investmentAmount, frequency, years);
+
+            if (results.error) throw new Error(results.error);
+
+            const traces = [
+                {
+                    x: results.time_labels,
+                    y: results.upper_scenario,
+                    mode: 'lines',
+                    name: 'Upper 5% Scenario',
+                    line: { color: 'lightgreen', width: 0 }
+                },
+                {
+                    x: results.time_labels,
+                    y: results.lower_scenario,
+                    mode: 'lines',
+                    name: 'Lower 5% Scenario',
+                    fill: 'tonexty', // Fill area between upper and lower
+                    fillcolor: 'rgba(0,176,246,0.2)',
+                    line: { color: 'lightgreen', width: 0 }
+                },
+                {
+                    x: results.time_labels,
+                    y: results.mean_scenario,
+                    mode: 'lines',
+                    name: 'Mean Scenario',
+                    line: { color: '#007bff', width: 3 }
+                },
+                {
+                    x: results.time_labels,
+                    y: results.total_invested,
+                    mode: 'lines',
+                    name: 'Total Invested',
+                    line: { color: '#6c757d', width: 2, dash: 'dash' }
+                }
+            ];
+
+            const layout = { 
+                title: 'Future DCA Simulation',
+                xaxis: { title: 'Years' }, 
+                yaxis: { title: 'Portfolio Value' }
+            };
+            Plotly.newPlot(ui.dcaSimulationGraphDiv, traces, layout);
+
+            ui.dcaSimulationResultsDiv.innerHTML = `<h3>Future Projection Results</h3>
+                <p><strong>Total Amount Invested:</strong> ${results.total_invested.slice(-1)[0].toLocaleString(undefined, {style: 'currency', currency: 'USD'})}</p>
+                <p><strong>Projected Mean Value:</strong> ${results.final_mean_value.toLocaleString(undefined, {style: 'currency', currency: 'USD'})}</p>`;
+
+        } catch (error) {
+            ui.dcaSimulationResultsDiv.innerHTML = `<p style="color: red;">${error.message}</p>`;
+        }
+    });
+
     // --- Initial Page Load ---
     async function initializeApp() {
         try {
-            const etfList = await api.getEtfList();
-            ui.createEtfCheckboxes(etfList, ui.etfCheckboxesDiv);
+            etfDefinitions = await api.getEtfList();
+            filterAndDisplayEtfs(); // Initial display based on default filters
             generateMap(); // Initial map generation
         } catch (error) {
             console.error('Initialization failed:', error);

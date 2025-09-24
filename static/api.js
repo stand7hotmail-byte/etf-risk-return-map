@@ -126,6 +126,20 @@ export async function runMonteCarlo(tickers, period, num_simulations, simulation
     return post('/monte_carlo_simulation', { tickers, period, num_simulations, simulation_days });
 }
 
+export async function runDcaSimulation(tickers, weights, period, investment_amount, frequency) {
+    return post('/dca_simulation', { tickers, weights, period, investment_amount, frequency });
+}
+
 export async function analyzeCsv(csv_data) {
     return post('/analyze_csv_data', { csv_data });
+}
+
+export async function runFutureDcaSimulation(portfolioReturn, portfolioRisk, investmentAmount, frequency, years) {
+    return post('/future_dca_simulation', { 
+        portfolio_return: portfolioReturn, 
+        portfolio_risk: portfolioRisk, 
+        investment_amount: investmentAmount, 
+        frequency: frequency, 
+        years: years 
+    });
 }

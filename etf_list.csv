@@ -1,0 +1,60 @@
+ticker,asset_class,region,name
+SPY,Stock,US,SPDR S&P 500 ETF Trust
+VOO,Stock,US,Vanguard S&P 500 ETF
+QQQ,Stock,US,Invesco QQQ Trust
+VTI,Stock,US,Vanguard Total Stock Market ETF
+VXUS,Stock,Global ex-US,Vanguard Total International Stock ETF
+BND,Bond,US,Vanguard Total Bond Market ETF
+AGG,Bond,US,iShares Core U.S. Aggregate Bond ETF
+GLD,Commodity,Global,SPDR Gold Shares
+TLT,Bond,US,iShares 20+ Year Treasury Bond ETF
+XLK,Stock,US,Technology Select Sector SPDR Fund
+XLF,Stock,US,Financial Select Sector SPDR Fund
+XLV,Stock,US,Health Care Select Sector SPDR Fund
+VNQ,Real Estate,US,Vanguard Real Estate ETF
+IEMG,Stock,Emerging,iShares Core MSCI Emerging Markets ETF
+EFA,Stock,Developed ex-US,iShares MSCI EAFE ETF
+VGT,Stock,US,Vanguard Information Technology ETF
+VCR,Stock,US,Vanguard Consumer Discretionary ETF
+VFH,Stock,US,Vanguard Financials ETF
+VHT,Stock,US,Vanguard Health Care ETF
+VIS,Stock,US,Vanguard Industrials ETF
+VAW,Stock,US,Vanguard Materials ETF
+XLC,Stock,US,Communication Services Select Sector SPDR Fund
+XLP,Stock,US,Consumer Staples Select Sector SPDR Fund
+XLE,Stock,US,Energy Select Sector SPDR Fund
+XLU,Stock,US,Utilities Select Sector SPDR Fund
+XLRE,Real Estate,US,Real Estate Select Sector SPDR Fund
+VEA,Stock,Developed ex-US,Vanguard FTSE Developed Markets ETF
+IEFA,Stock,Developed ex-US,iShares Core MSCI EAFE ETF
+SCHF,Stock,Developed ex-US,Schwab International Equity ETF
+VWO,Stock,Emerging,Vanguard FTSE Emerging Markets ETF
+BSV,Bond,US,Vanguard Short-Term Bond ETF
+SHY,Bond,US,iShares 1-3 Year Treasury Bond ETF
+VGSH,Bond,US,Vanguard Short-Term Treasury ETF
+VCIT,Bond,US,Vanguard Intermediate-Term Corporate Bond ETF
+HYG,Bond,US,iShares iBoxx $ High Yield Corporate Bond ETF
+TIP,Bond,US,iShares TIPS Bond ETF
+VTIP,Bond,US,Vanguard Short-Term Inflation-Protected Securities ETF
+PDBC,Commodity,Global,Invesco Optimum Yield Diversified Commodity Strategy No K-1 ETF
+DBA,Commodity,Global,Invesco DB Agriculture Fund
+USO,Commodity,Global,United States Oil Fund LP
+UNG,Commodity,Global,United States Natural Gas Fund LP
+MOO,Stock,Global,VanEck Agribusiness ETF
+VNQI,Real Estate,Global ex-US,Vanguard Global ex-U.S. Real Estate ETF
+RWX,Real Estate,Global ex-US,SPDR Dow Jones International Real Estate ETF
+ICLN,Stock,Global,iShares Global Clean Energy ETF
+QCLN,Stock,Global,First Trust NASDAQ Clean Edge Green Energy Index Fund
+TAN,Stock,Global,Invesco Solar ETF
+CIBR,Stock,Global,First Trust NASDAQ Cybersecurity ETF
+HACK,Stock,Global,Amplify Cybersecurity ETF
+BOTZ,Stock,Global,Global X Robotics & Artificial Intelligence ETF
+ROBO,Stock,Global,ROBO Global Robotics & Automation Index ETF
+ARKQ,Stock,Global,ARK Autonomous Technology & Robotics ETF
+IXN,Stock,Global,iShares Global Tech ETF
+IXJ,Stock,Global,iShares Global Healthcare ETF
+IXC,Stock,Global,iShares Global Energy ETF
+EWJ,Stock,Japan,iShares MSCI Japan ETF
+EWG,Stock,Germany,iShares MSCI Germany ETF
+EWU,Stock,UK,iShares MSCI United Kingdom ETF
+EWC,Stock,Canada,iShares MSCI Canada ETF

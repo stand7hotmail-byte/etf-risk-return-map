@@ -3,6 +3,8 @@
 
 // --- DOM Element Exports ---
 export const etfCheckboxesDiv = document.getElementById('etf-checkboxes');
+export const assetClassFilter = document.getElementById('asset-class-filter');
+export const regionFilter = document.getElementById('region-filter');
 export const constraintInputsDiv = document.getElementById('constraint-inputs');
 export const generateMapBtn = document.getElementById('generate-map-btn');
 export const dataPeriodSelect = document.getElementById('data-period-select');
@@ -26,6 +28,12 @@ export const csvFileInput = document.getElementById('csv-file-input');
 export const analyzeCsvBtn = document.getElementById('analyze-csv-btn');
 export const csvAnalysisResultsDiv = document.getElementById('csv-analysis-results');
 export const csvAnalysisGraphDiv = document.getElementById('csv-analysis-graph');
+export const dcaAmountInput = document.getElementById('dca-amount-input');
+export const dcaFrequencySelect = document.getElementById('dca-frequency-select');
+export const runDcaSimulationBtn = document.getElementById('run-dca-simulation-btn');
+export const dcaSimulationGraphDiv = document.getElementById('dca-simulation-graph');
+export const dcaSimulationResultsDiv = document.getElementById('dca-simulation-results');
+export const dcaYearsInput = document.getElementById('dca-years-input');
 export const portfolioNameInput = document.getElementById('portfolio-name-input');
 export const savePortfolioBtn = document.getElementById('save-portfolio-btn');
 export const listPortfoliosBtn = document.getElementById('list-portfolios-btn');
@@ -36,10 +44,12 @@ export const portfolioMessageDiv = document.getElementById('portfolio-message');
 
 // --- UI Functions ---
 
-export function createEtfCheckboxes(etfList, container) {
+export function createEtfCheckboxes(etfList, definitions, container) {
     container.innerHTML = '';
     etfList.forEach(ticker => {
+        const etfInfo = definitions[ticker];
         const label = document.createElement('label');
+        label.title = etfInfo ? etfInfo.name : 'No description'; // Add tooltip
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
         checkbox.value = ticker;
