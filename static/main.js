@@ -81,7 +81,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 x: frontierData.frontier_points.map(item => item.Risk),
                 y: frontierData.frontier_points.map(item => item.Return),
                 mode: 'lines', type: 'scatter', name: 'Efficient Frontier',
-                line: { color: 'blue', width: 2 }
+                line: { color: 'blue', width: 2, shape: 'spline' } // Use spline for smoothing
             });
 
             // Add Risk-Free Rate trace

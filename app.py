@@ -10,7 +10,7 @@ import pandas as pd
 import numpy as np
 from scipy.optimize import minimize
 from pydantic import BaseModel
-from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, Text
+from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, Text, UniqueConstraint
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
@@ -21,6 +21,7 @@ import json
 from jose import jwt, JWTError
 import firebase_admin
 from firebase_admin import credentials, auth
+import time
 
 # Firebase Admin SDKの初期化
 cred = credentials.Certificate("C:\\Users\\stand\\Desktop\\etf_webapp\\etf-webapp-firebase-adminsdk-fbsvc-96649b4b25.json")
@@ -57,6 +58,16 @@ class Portfolio(Base):
     data = Column(Text) # JSON string of portfolio data
     created_at = Column(DateTime, default=datetime.now)
 
+class StockPrice(Base):
+    __tablename__ = "stock_prices"
+
+    id = Column(Integer, primary_key=True, index=True)
+    ticker = Column(String, index=True)
+    date = Column(DateTime, index=True)
+    close_price = Column(Float)
+
+    __table_args__ = (UniqueConstraint('ticker', 'date', name='_ticker_date_uc'),)
+
 # データベーステーブルの作成
 Base.metadata.create_all(bind=engine)
 
@@ -67,6 +78,34 @@ def get_db():
         yield db
     finally:
         db.close()
+
+# --- Stock Price Data Functions ---
+def get_prices_from_db(db: Session, tickers: list[str], start_date: datetime, end_date: datetime):
+    prices = db.query(StockPrice).filter(
+        StockPrice.ticker.in_(tickers),
+        StockPrice.date >= start_date,
+        StockPrice.date <= end_date
+    ).all()
+    
+    if not prices:
+        return pd.DataFrame()
+    
+    df = pd.DataFrame([(p.date, p.ticker, p.close_price) for p in prices], columns=['date', 'ticker', 'close_price'])
+    price_df = df.pivot(index='date', columns='ticker', values='close_price')
+    price_df.sort_index(inplace=True)
+    return price_df
+
+def save_prices_to_db(db: Session, df: pd.DataFrame):
+    df_long = df.reset_index().melt(id_vars=['Date'], var_name='ticker', value_name='close_price')
+    df_long.rename(columns={'Date': 'date'}, inplace=True)
+    df_long.dropna(subset=['close_price'], inplace=True)
+    
+    # This is a simplified upsert for SQLite
+    for record in df_long.to_dict(orient="records"):
+        db.merge(StockPrice(**record))
+    db.commit()
+# --- End of Stock Price Data Functions ---
+
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
@@ -279,32 +318,46 @@ async def get_risk_free_rate():
     return {"risk_free_rate": RISK_FREE_RATE}
 
 @app.get("/data")
-async def get_etf_data(tickers: list[str] = Query(ALL_ETF_TICKERS), period: str = Query("5y")): # デフォルトで全ティッカーを選択
+async def get_etf_data(tickers: list[str] = Query(ALL_ETF_TICKERS), period: str = Query("5y"), db: Session = Depends(get_db)):
+    start_time = time.time()
     if not tickers:
-        return [] # ティッカーが選択されていない場合は空のリストを返す
+        return []
 
-    # --- 2. yfinanceで株価データを取得 ---
-    # 過去5年分のデータを取得
-    data = yf.download(tickers, period=period, group_by='ticker')
-    # MultiIndexから'Close'のデータのみを抽出（これが実質的な調整済み終値）
-    data = data.xs('Close', level='Price', axis=1)
+    end_date = datetime.now()
+    if period.endswith('y'):
+        years = int(period[:-1])
+        start_date = end_date - timedelta(days=years * 365)
+    else:
+        start_date = end_date - timedelta(days=365)
 
-    # --- 3. 日次リターンの計算 ---
+    db_price_df = get_prices_from_db(db, tickers, start_date, end_date)
+    missing_tickers = [t for t in tickers if t not in db_price_df.columns]
+
+    if missing_tickers:
+        yf_data = yf.download(missing_tickers, start=start_date, end=end_date, group_by='ticker')
+        if not yf_data.empty:
+            yf_price_df = yf_data.xs('Close', level=1, axis=1).copy()
+            yf_price_df.index = pd.to_datetime(yf_price_df.index)
+            save_prices_to_db(db, yf_price_df)
+            data = pd.concat([db_price_df, yf_price_df], axis=1)
+        else:
+            data = db_price_df
+    else:
+        data = db_price_df
+
+    data.sort_index(inplace=True)
+    
     returns = data.pct_change().dropna()
-
-    # --- 4. 年率リスク・リターンの計算 ---
-    # (252営業日として計算)
     annual_returns = returns.mean() * 252
     annual_volatility = returns.std() * (252 ** 0.5)
 
-    # 結果をまとめる
     result_df = pd.DataFrame({
         'Return': annual_returns,
         'Risk': annual_volatility,
         'Ticker': annual_returns.index
     })
 
-    # --- 5. 結果をJSON形式で返す ---
+    print(f"--- /data endpoint took {(time.time() - start_time) * 1000:.2f} ms ---")
     return result_df.to_dict(orient='records')
 
 # ポートフォリオのリスクを計算する関数
@@ -338,102 +391,100 @@ def portfolio_sortino_ratio(weights, avg_returns, returns, cov_matrix, risk_free
     return (p_return - risk_free_rate) / downside_dev
 
 @app.get("/efficient_frontier")
-async def get_efficient_frontier(tickers: list[str] = Query(ALL_ETF_TICKERS), period: str = Query("5y"), constraints: str = Query("{}")):
+async def get_efficient_frontier(tickers: list[str] = Query(ALL_ETF_TICKERS), period: str = Query("5y"), constraints: str = Query("{}"), db: Session = Depends(get_db)):
+    start_time = time.time()
     import json
     parsed_constraints = json.loads(constraints)
     if not tickers:
         return {"frontier_points": [], "tangency_portfolio": None, "tangency_portfolio_weights": {}}
 
-    # --- 1. 株価データを取得 ---
-    data = yf.download(tickers, period=period, group_by='ticker')
-    data = data.xs('Close', level='Price', axis=1)
+    end_date = datetime.now()
+    if period.endswith('y'):
+        years = int(period[:-1])
+        start_date = end_date - timedelta(days=years * 365)
+    else:
+        start_date = end_date - timedelta(days=365)
 
-    # --- 2. 日次リターンと共分散行列を計算 ---
+    db_price_df = get_prices_from_db(db, tickers, start_date, end_date)
+    missing_tickers = [t for t in tickers if t not in db_price_df.columns]
+
+    if missing_tickers:
+        yf_data = yf.download(missing_tickers, start=start_date, end=end_date, group_by='ticker')
+        if not yf_data.empty:
+            yf_price_df = yf_data.xs('Close', level=1, axis=1).copy()
+            yf_price_df.index = pd.to_datetime(yf_price_df.index)
+            save_prices_to_db(db, yf_price_df)
+            data = pd.concat([db_price_df, yf_price_df], axis=1)
+        else:
+            data = db_price_df
+    else:
+        data = db_price_df
+    
+    # --- Start of Major Change: Ensure consistent ordering ---
+    # 1. Get the final list of tickers that have data
+    final_tickers = data.columns.tolist()
+    data = data[final_tickers] # Re-order data columns alphabetically
+    data.sort_index(inplace=True)
+
+    # 2. Calculate returns and re-order again to be safe
     returns = data.pct_change().dropna()
+    returns = returns[final_tickers]
+
+    # 3. Create avg_returns and cov_matrix from the consistently ordered returns
     avg_returns = returns.mean() * 252
     cov_matrix = returns.cov() * 252
+    # --- End of Major Change ---
 
-    num_assets = len(tickers)
-
-    # 最適化の制約条件
-    constraints_list = ({'type': 'eq', 'fun': lambda x: np.sum(x) - 1},) # 重みの合計は1
-
-    # 各資産の重み制約を動的に構築
+    num_assets = len(final_tickers) # Use final_tickers
+    constraints_list = ({'type': 'eq', 'fun': lambda x: np.sum(x) - 1},)
     bounds = []
-    for i in range(num_assets):
-        ticker = tickers[i]
-        min_bound = parsed_constraints.get(ticker, {}).get('min', 0) / 100.0 # パーセンテージを小数に変換
-        max_bound = parsed_constraints.get(ticker, {}).get('max', 100) / 100.0 # パーセンテージを小数に変換
+    for ticker in final_tickers: # Use final_tickers
+        min_bound = parsed_constraints.get(ticker, {}).get('min', 0) / 100.0
+        max_bound = parsed_constraints.get(ticker, {}).get('max', 100) / 100.0
         bounds.append((min_bound, max_bound))
     bounds = tuple(bounds)
 
     efficient_frontier_points = []
-
-    # リターン目標の範囲をより適切に設定
-    min_return = avg_returns.min()
-    max_return = avg_returns.max()
-    target_returns = np.linspace(min_return * 0.8, max_return * 1.2, 50) # 範囲を広げる
-
+    target_returns = np.linspace(avg_returns.min() * 0.8, avg_returns.max() * 1.2, 20)
     max_sharpe_ratio = -np.inf
     tangency_portfolio = None
     tangency_portfolio_weights = {}
 
     for target_return in target_returns:
-        # 目的関数: リスクを最小化
         def minimize_volatility(weights):
             return portfolio_volatility(weights, cov_matrix)
 
-        # 制約: 目標リターンを達成
-        constraints_with_target = constraints_list + \
-                                  ({'type': 'eq', 'fun': lambda x: portfolio_return(x, avg_returns) - target_return},)
-
-        # 初期値
+        constraints_with_target = constraints_list + ({'type': 'eq', 'fun': lambda x: portfolio_return(x, avg_returns) - target_return},)
         initial_weights = num_assets * [1. / num_assets,]
-
-        # 最適化を実行
-        result = minimize(minimize_volatility, initial_weights, method='SLSQP',
-                          bounds=bounds, constraints=constraints_with_target)
+        result = minimize(minimize_volatility, initial_weights, method='SLSQP', bounds=bounds, constraints=constraints_with_target)
 
         if result.success:
             risk = portfolio_volatility(result.x, cov_matrix)
             ret = portfolio_return(result.x, avg_returns)
-            efficient_frontier_points.append({
-                'Risk': risk,
-                'Return': ret
-            })
+            efficient_frontier_points.append({'Risk': risk, 'Return': ret})
 
-            # シャープ・レシオを計算し、最大シャープ・レシオのポートフォリオを更新
             sharpe = portfolio_sharpe_ratio(result.x, avg_returns, cov_matrix, RISK_FREE_RATE)
-            sortino = portfolio_sortino_ratio(result.x, avg_returns, returns, cov_matrix, RISK_FREE_RATE)
             if sharpe > max_sharpe_ratio:
                 max_sharpe_ratio = sharpe
-                tangency_portfolio = {'Risk': risk, 'Return': ret, 'SharpeRatio': sharpe, 'SortinoRatio': sortino}
-                # 重みを保存
-                tangency_portfolio_weights = {ticker: weight for ticker, weight in zip(avg_returns.index, result.x)}
+                tangency_portfolio = {'Risk': risk, 'Return': ret, 'SharpeRatio': sharpe}
+                tangency_portfolio_weights = {ticker: weight for ticker, weight in zip(final_tickers, result.x)}
 
     if not efficient_frontier_points:
-        return {"error": "No efficient frontier points could be generated with the given constraints. Try relaxing the constraints or selecting different ETFs."}
+        return {"error": "No efficient frontier points could be generated."}
 
-    # リスクでソートし、重複する点や不適切な点を除外して滑らかにする
     efficient_frontier_points.sort(key=lambda x: x['Risk'])
 
-    # 効率的フロンティアの点をフィルタリングして、より滑らかな曲線にする
+    # This filtering step is crucial for a smooth curve
     filtered_frontier = []
     if efficient_frontier_points:
         filtered_frontier.append(efficient_frontier_points[0])
         for i in range(1, len(efficient_frontier_points)):
-            # 前の点よりもリスクが大きく、リターンも大きい（または同等）場合のみ追加
-            if efficient_frontier_points[i]['Risk'] > filtered_frontier[-1]['Risk'] and \
-               efficient_frontier_points[i]['Return'] >= filtered_frontier[-1]['Return']:
+            if efficient_frontier_points[i]['Risk'] > filtered_frontier[-1]['Risk'] and efficient_frontier_points[i]['Return'] >= filtered_frontier[-1]['Return']:
                 filtered_frontier.append(efficient_frontier_points[i])
-            # または、リスクが同じでリターンが大きい場合
-            elif efficient_frontier_points[i]['Risk'] == filtered_frontier[-1]['Risk'] and \
-                 filtered_frontier[i]['Return'] > filtered_frontier[-1]['Return']:
-                filtered_frontier[-1] = efficient_frontier_points[i] # より良い点に置き換え
+            elif efficient_frontier_points[i]['Risk'] == filtered_frontier[-1]['Risk'] and efficient_frontier_points[i]['Return'] > filtered_frontier[-1]['Return']:
+                filtered_frontier[-1] = efficient_frontier_points[i]
 
-    if not filtered_frontier:
-        return {"error": "No efficient frontier points could be generated with the given constraints. Try relaxing the constraints or selecting different ETFs."}
-
+    print(f"--- /efficient_frontier endpoint took {(time.time() - start_time) * 1000:.2f} ms ---")
     return {"frontier_points": filtered_frontier, "tangency_portfolio": tangency_portfolio, "tangency_portfolio_weights": tangency_portfolio_weights}
 
 class CustomPortfolioRequest(BaseModel):
