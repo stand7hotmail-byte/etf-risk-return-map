@@ -5,7 +5,6 @@ import { initAuth } from './auth.js';
 document.addEventListener('DOMContentLoaded', function() {
 
     let currentWeights = {};
-    let etfConstraints = {};
 
     let etfDefinitions = {}; // To store ETF metadata
 
@@ -52,13 +51,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Create UI components and get initial values
         currentWeights = ui.createPortfolioSliders(selectedTickers, ui.portfolioSlidersDiv, currentWeights);
-        etfConstraints = ui.createConstraintInputs(selectedTickers, ui.constraintInputsDiv);
         ui.customPortfolioResultDiv.innerHTML = '';
 
         const period = ui.dataPeriodSelect.value;
 
         try {
-            const { etfData, frontierData } = await api.getMapData(selectedTickers, period, etfConstraints);
+            const { etfData, frontierData } = await api.getMapData(selectedTickers, period);
             const riskFreeRateData = await api.getRiskFreeRate();
             
             if (frontierData.error) {
@@ -177,13 +175,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    ui.constraintInputsDiv.addEventListener('change', (event) => {
-        if (event.target.type === 'number') {
-            const ticker = event.target.dataset.ticker;
-            const type = event.target.classList.contains('constraint-min') ? 'min' : 'max';
-            etfConstraints[ticker][type] = parseFloat(event.target.value);
-        }
-    });
+
 
     // Portfolio Management Listeners
     ui.savePortfolioBtn.addEventListener('click', async () => {
@@ -251,7 +243,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const period = ui.dataPeriodSelect.value;
 
         try {
-            const result = await api.optimizePortfolio('/optimize_by_return', selectedTickers, targetReturn, period, etfConstraints);
+            const result = await api.optimizePortfolio('/optimize_by_return', selectedTickers, targetReturn, period);
             
             let resultHtml = `<h3>Optimized for Return</h3>
                 <p><strong>Achieved Return:</strong> ${(result.Return * 100).toFixed(2)}%</p>
@@ -280,7 +272,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const period = ui.dataPeriodSelect.value;
 
         try {
-            const result = await api.optimizePortfolio('/optimize_by_risk', selectedTickers, targetRisk, period, etfConstraints);
+            const result = await api.optimizePortfolio('/optimize_by_risk', selectedTickers, targetRisk, period);
 
             let resultHtml = `<h3>Optimized for Risk</h3>
                 <p><strong>Achieved Risk:</strong> ${(result.Risk * 100).toFixed(2)}%</p>

@@ -1,11 +1,10 @@
-
 // Handles all UI updates and DOM manipulation not related to auth
 
 // --- DOM Element Exports ---
 export const etfCheckboxesDiv = document.getElementById('etf-checkboxes');
 export const assetClassFilter = document.getElementById('asset-class-filter');
 export const regionFilter = document.getElementById('region-filter');
-export const constraintInputsDiv = document.getElementById('constraint-inputs');
+
 export const generateMapBtn = document.getElementById('generate-map-btn');
 export const dataPeriodSelect = document.getElementById('data-period-select');
 export const compositionDetailsDiv = document.getElementById('composition-details');
@@ -85,22 +84,6 @@ export function updateSliderPercentage(ticker, value) {
     }
 }
 
-export function createConstraintInputs(tickers, container) {
-    container.innerHTML = '';
-    const constraints = {};
-    tickers.forEach(ticker => {
-        const constraintRow = document.createElement('div');
-        constraintRow.style.marginBottom = '5px';
-        constraintRow.innerHTML = `
-            <label>${ticker}:</label>
-            Min: <input type="number" class="constraint-min" data-ticker="${ticker}" value="0" min="0" max="100" step="0.01" style="width: 60px;">
-            Max: <input type="number" class="constraint-max" data-ticker="${ticker}" value="100" min="0" max="100" step="0.01" style="width: 60px;">
-        `;
-        container.appendChild(constraintRow);
-        constraints[ticker] = { min: 0, max: 100 };
-    });
-    return constraints;
-}
 
 export function populatePortfolioList(portfolios) {
     savedPortfoliosSelect.innerHTML = '';

@@ -97,11 +97,10 @@ export async function getRiskFreeRate() {
     return response.json();
 }
 
-export async function getMapData(tickers, period, constraints) {
+export async function getMapData(tickers, period) {
     const queryParams = new URLSearchParams();
     tickers.forEach(ticker => queryParams.append('tickers', ticker));
     queryParams.append('period', period);
-    queryParams.append('constraints', JSON.stringify(constraints));
 
     const [etfData, frontierData] = await Promise.all([
         fetch(`/data?${queryParams.toString()}`).then(res => res.json()),
@@ -114,8 +113,8 @@ export async function getCustomPortfolioData(tickers, weights, period) {
     return post('/custom_portfolio_data', { tickers, weights, period });
 }
 
-export async function optimizePortfolio(url, tickers, target_value, period, constraints) {
-    return post(url, { tickers, target_value, period, constraints });
+export async function optimizePortfolio(url, tickers, target_value, period) {
+    return post(url, { tickers, target_value, period });
 }
 
 export async function getHistoricalPerformance(tickers, period) {

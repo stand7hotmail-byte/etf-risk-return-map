@@ -391,10 +391,9 @@ def portfolio_sortino_ratio(weights, avg_returns, returns, cov_matrix, risk_free
     return (p_return - risk_free_rate) / downside_dev
 
 @app.get("/efficient_frontier")
-async def get_efficient_frontier(tickers: list[str] = Query(ALL_ETF_TICKERS), period: str = Query("5y"), constraints: str = Query("{}"), db: Session = Depends(get_db)):
+async def get_efficient_frontier(tickers: list[str] = Query(ALL_ETF_TICKERS), period: str = Query("5y"), db: Session = Depends(get_db)):
     start_time = time.time()
     import json
-    parsed_constraints = json.loads(constraints)
     if not tickers:
         return {"frontier_points": [], "tangency_portfolio": None, "tangency_portfolio_weights": {}}
 
@@ -437,12 +436,7 @@ async def get_efficient_frontier(tickers: list[str] = Query(ALL_ETF_TICKERS), pe
 
     num_assets = len(final_tickers) # Use final_tickers
     constraints_list = ({'type': 'eq', 'fun': lambda x: np.sum(x) - 1},)
-    bounds = []
-    for ticker in final_tickers: # Use final_tickers
-        min_bound = parsed_constraints.get(ticker, {}).get('min', 0) / 100.0
-        max_bound = parsed_constraints.get(ticker, {}).get('max', 100) / 100.0
-        bounds.append((min_bound, max_bound))
-    bounds = tuple(bounds)
+    bounds = tuple([(0.0, 1.0)] * num_assets)
 
     efficient_frontier_points = []
     target_returns = np.linspace(avg_returns.min() * 0.8, avg_returns.max() * 1.2, 20)
@@ -496,7 +490,6 @@ class TargetOptimizationRequest(BaseModel):
     tickers: list[str]
     target_value: float
     period: str = "5y"
-    constraints: dict[str, dict[str, float]] = {}
 
 class HistoricalPerformanceRequest(BaseModel):
     tickers: list[str]
@@ -574,7 +567,6 @@ async def optimize_by_return(request: TargetOptimizationRequest):
     tickers = request.tickers
     target_return = request.target_value # 小数として受け取る
     period = request.period # <--- Get period from request
-    constraints_dict = request.constraints # 制約辞書を取得
 
     if not tickers:
         return {"error": "No tickers provided."}
@@ -594,13 +586,7 @@ async def optimize_by_return(request: TargetOptimizationRequest):
     )
 
     # 各資産の重み制約を動的に構築
-    bounds = []
-    for i in range(num_assets):
-        ticker = tickers[i]
-        min_bound = constraints_dict.get(ticker, {}).get('min', 0) / 100.0 # パーセンテージを小数に変換
-        max_bound = constraints_dict.get(ticker, {}).get('max', 100) / 100.0 # パーセンテージを小数に変換
-        bounds.append((min_bound, max_bound))
-    bounds = tuple(bounds)
+    bounds = tuple([(0.0, 1.0)] * num_assets)
 
     initial_weights = num_assets * [1. / num_assets,]
 
@@ -630,7 +616,6 @@ async def optimize_by_risk(request: TargetOptimizationRequest):
     tickers = request.tickers
     target_risk = request.target_value # 小数として受け取る
     period = request.period # <--- Get period from request
-    constraints_dict = request.constraints # 制約辞書を取得
 
     if not tickers:
         return {"error": "No tickers provided."}
@@ -650,13 +635,7 @@ async def optimize_by_risk(request: TargetOptimizationRequest):
     )
 
     # 各資産の重み制約を動的に構築
-    bounds = []
-    for i in range(num_assets):
-        ticker = tickers[i]
-        min_bound = constraints_dict.get(ticker, {}).get('min', 0) / 100.0 # パーセンテージを小数に変換
-        max_bound = constraints_dict.get(ticker, {}).get('max', 100) / 100.0 # パーセンテージを小数に変換
-        bounds.append((min_bound, max_bound))
-    bounds = tuple(bounds)
+    bounds = tuple([(0.0, 1.0)] * num_assets)
 
     initial_weights = num_assets * [1. / num_assets,]
 
