@@ -28,20 +28,44 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: var(--s2);
             background-color: var(--color-background);
             color: var(--color-text-primary);
             line-height: 1.5;
             margin: 0;
         }
+        
+        .app-container {
+            display: grid;
+            grid-template-columns: 300px 1fr; /* Sidebar width and main content */
+            grid-template-rows: auto 1fr;
+            grid-template-areas: 
+                "header header"
+                "sidebar main";
+            height: 100vh;
+        }
 
-        .container, .auth-section, .portfolio-management-section {
-            width: 100%;
-            max-width: 1200px;
-            margin: 0 auto var(--s2) auto;
+        #app-header {
+            grid-area: header;
+            padding: var(--s0) var(--s1);
+            background-color: var(--color-surface);
+            border-bottom: 1px solid var(--color-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        #sidebar {
+            grid-area: sidebar;
+            padding: var(--s1);
+            background-color: var(--color-surface);
+            border-right: 1px solid var(--color-border);
+            overflow-y: auto; /* Make sidebar scrollable if content overflows */
+        }
+
+        #main-content {
+            grid-area: main;
+            padding: var(--s1);
+            overflow-y: auto; /* Make main content scrollable */
         }
 
         .section-box {
@@ -60,7 +84,7 @@
             margin-top: 0;
         }
 
-        h1 { font-size: var(--s2); text-align: center; margin-bottom: var(--s2); }
+        h1 { font-size: var(--s2); margin-bottom: 0; }
         h2 { font-size: var(--s1); margin-bottom: var(--s1); border-bottom: 1px solid var(--color-border); padding-bottom: var(--s-1); }
         h3 { font-size: var(--s0); margin-bottom: var(--s-1); }
 
@@ -69,8 +93,8 @@
 
         #etf-checkboxes {
             display: flex;
-            flex-wrap: wrap;
-            gap: var(--s0);
+            flex-direction: column; /* Changed from flex-wrap to a single column */
+            gap: var(--s-1);
         }
 
         #etf-checkboxes label {
@@ -78,11 +102,11 @@
             align-items: center;
             cursor: pointer;
             font-weight: 400;
-            font-size: var(--s0); /* Larger font size */
+            font-size: var(--s0);
         }
         input[type="checkbox"] { 
             margin-right: var(--s-2); 
-            transform: scale(1.2); /* Make checkbox bigger */
+            transform: scale(1.2);
         }
 
         button {
@@ -113,171 +137,188 @@
             margin-bottom: var(--s1);
         }
 
-        #constraint-inputs input[type="number"] {
-            width: 110px;
-            padding-left: var(--s-2);
-            padding-right: var(--s-2);
-        }
-
-        @media (max-width: 768px) {
-            .control-group { flex-direction: column; align-items: stretch; }
+        @media (max-width: 1024px) {
+            .app-container {
+                grid-template-columns: 1fr;
+                grid-template-areas:
+                    "header"
+                    "sidebar"
+                    "main";
+            }
+            #sidebar {
+                border-right: none;
+                border-bottom: 1px solid var(--color-border);
+            }
         }
     </style>
 </head>
 <body>
-    <div class="auth-section section-box">
-        <h2>User Authentication</h2>
-        <div>
-            <label for="auth-username">Username:</label>
-            <input type="text" id="auth-username" placeholder="Enter username">
-        </div>
-        <div style="margin-top: 10px;">
-            <label for="auth-password">Password:</label>
-            <input type="password" id="auth-password" placeholder="Enter password">
-        </div>
-        <div style="margin-top: 15px;">
-            <button id="register-btn">Register</button>
-            <button id="login-btn" style="margin-left: 10px;">Login</button>
-            <button id="google-login-btn" style="margin-left: 10px;">Login with Google</button>
-            <button id="logout-btn" style="margin-left: 10px; display: none;">Logout</button>
-        </div>
-        <div id="auth-message" style="margin-top: 10px; color: red;"></div>
-        <div id="logged-in-user" style="margin-top: 10px; display: none;">Logged in as: <strong></strong></div>
-    </div>
+    <div class="app-container">
+        <header id="app-header">
+            <h1>ETF Risk-Return Map</h1>
+            <div class="auth-controls">
+                <!-- Auth and Portfolio Management will be moved or redesigned later -->
+            </div>
+        </header>
 
-    <div class="portfolio-management-section section-box">
-        <h2>Portfolio Management</h2>
-        <div style="margin-top: 10px;">
-            <label for="portfolio-name-input">Portfolio Name:</label>
-            <input type="text" id="portfolio-name-input" placeholder="My Portfolio 1">
-            <button id="save-portfolio-btn">Save Portfolio</button>
-        </div>
-        <div style="margin-top: 10px;">
-            <button id="list-portfolios-btn">List My Portfolios</button>
-            <select id="saved-portfolios-select" style="margin-left: 10px;"></select>
-            <button id="load-portfolio-btn" style="margin-left: 10px;">Load Selected</button>
-            <button id="delete-portfolio-btn" style="margin-left: 10px;">Delete Selected</button>
-        </div>
-        <div id="portfolio-message" style="margin-top: 10px; color: blue;"></div>
-    </div>
+        <aside id="sidebar">
+            <div class="section-box">
+                <h2>Select ETFs</h2>
+                <div id="etf-filter-section" class="control-group">
+                    <div>
+                        <label for="asset-class-filter">Asset Class:</label>
+                        <select id="asset-class-filter">
+                            <option value="all">All</option>
+                            <option value="Stock">Stock</option>
+                            <option value="Bond">Bond</option>
+                            <option value="Commodity">Commodity</option>
+                            <option value="Real Estate">Real Estate</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="region-filter">Region:</label>
+                        <select id="region-filter">
+                            <option value="all">All</option>
+                            <option value="US">US</option>
+                            <option value="Global">Global</option>
+                            <option value="Global ex-US">Global ex-US</option>
+                            <option value="Developed ex-US">Developed ex-US</option>
+                            <option value="Emerging">Emerging</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="etf-checkboxes"></div>
+            </div>
+        </aside>
 
-    <div class="container">
-        <h1>ETF Risk-Return Map</h1>
+        <main id="main-content">
+            <div class="auth-section section-box">
+                <h2>User Authentication</h2>
+                <div>
+                    <label for="auth-username">Username:</label>
+                    <input type="text" id="auth-username" placeholder="Enter username">
+                </div>
+                <div style="margin-top: 10px;">
+                    <label for="auth-password">Password:</label>
+                    <input type="password" id="auth-password" placeholder="Enter password">
+                </div>
+                <div style="margin-top: 15px;">
+                    <button id="register-btn">Register</button>
+                    <button id="login-btn" style="margin-left: 10px;">Login</button>
+                    <button id="google-login-btn" style="margin-left: 10px;">Login with Google</button>
+                    <button id="logout-btn" style="margin-left: 10px; display: none;">Logout</button>
+                </div>
+                <div id="auth-message" style="margin-top: 10px; color: red;"></div>
+                <div id="logged-in-user" style="margin-top: 10px; display: none;">Logged in as: <strong></strong></div>
+            </div>
         
-        <div id="etf-filter-section" class="control-group section-box">
-            <label for="asset-class-filter">Asset Class:</label>
-            <select id="asset-class-filter">
-                <option value="all">All</option>
-                <option value="Stock">Stock</option>
-                <option value="Bond">Bond</option>
-                <option value="Commodity">Commodity</option>
-                <option value="Real Estate">Real Estate</option>
-            </select>
-            <label for="region-filter">Region:</label>
-            <select id="region-filter">
-                <option value="all">All</option>
-                <option value="US">US</option>
-                <option value="Global">Global</option>
-                <option value="Global ex-US">Global ex-US</option>
-                <option value="Developed ex-US">Developed ex-US</option>
-                <option value="Emerging">Emerging</option>
-            </select>
-        </div>
-
-        <div id="etf-checkboxes"></div>
-
-
-
-        <div class="control-group">
-            <label for="data-period-select">Data Period:</label>
-            <select id="data-period-select">
-                <option value="1y">1 Year</option>
-                <option value="3y">3 Years</option>
-                <option value="5y" selected>5 Years</option>
-                <option value="10y">10 Years</option>
-            </select>
-            <button id="generate-map-btn">Generate Map</button>
-        </div>
-        <div id="graph"></div>
-        <div id="portfolio-composition" class="section-box">
-            <h2>Max Sharpe Ratio Portfolio Composition</h2>
-            <div id="composition-details">Select ETFs and click 'Generate Map' to see composition.</div>
-        </div>
-
-        <div id="custom-portfolio-section" class="section-box">
-            <h2>Create Your Custom Portfolio</h2>
-            <div id="portfolio-sliders"></div>
-            <button id="calculate-custom-portfolio-btn" style="margin-top: 10px;">Calculate Custom Portfolio</button>
-            <div id="custom-portfolio-result" style="margin-top: 10px;"></div>
-        </div>
-
-        <div id="target-optimization-section" class="section-box">
-            <h2>Target Optimization</h2>
-            <p>Enter a target return or target risk to find the optimal portfolio.</p>
-            <div class="control-group">
-                <label for="target-return-input">Target Return (%):</label>
-                <input type="number" id="target-return-input" step="0.01" min="0" max="100" placeholder="e.g., 10">
-                <button id="optimize-by-return-btn">Optimize by Return</button>
+            <div class="portfolio-management-section section-box">
+                <h2>Portfolio Management</h2>
+                <div style="margin-top: 10px;">
+                    <label for="portfolio-name-input">Portfolio Name:</label>
+                    <input type="text" id="portfolio-name-input" placeholder="My Portfolio 1">
+                    <button id="save-portfolio-btn">Save Portfolio</button>
+                </div>
+                <div style="margin-top: 10px;">
+                    <button id="list-portfolios-btn">List My Portfolios</button>
+                    <select id="saved-portfolios-select" style="margin-left: 10px;"></select>
+                    <button id="load-portfolio-btn" style="margin-left: 10px;">Load Selected</button>
+                    <button id="delete-portfolio-btn" style="margin-left: 10px;">Delete Selected</button>
+                </div>
+                <div id="portfolio-message" style="margin-top: 10px; color: blue;"></div>
             </div>
-            <div class="control-group">
-                <label for="target-risk-input">Target Risk (%):</label>
-                <input type="number" id="target-risk-input" step="0.01" min="0" max="100" placeholder="e.g., 15">
-                <button id="optimize-by-risk-btn">Optimize by Risk</button>
-            </div>
-            <div id="target-optimization-result" style="margin-top: 10px;"></div>
-        </div>
 
-        <div id="historical-performance-section" class="section-box">
-            <h2>Historical Performance</h2>
-            <p>View the cumulative historical performance of selected ETFs.</p>
-            <button id="show-historical-performance-btn">Show Historical Performance</button>
-            <div id="historical-performance-graph" style="margin-top: 10px;"></div>
-        </div>
-
-        <div id="monte-carlo-section" class="section-box">
-            <h2>Monte Carlo Simulation</h2>
-            <p>Simulate future portfolio returns based on historical data.</p>
             <div class="control-group">
-                <label for="num-simulations-input">Number of Simulations:</label>
-                <input type="number" id="num-simulations-input" value="1000" min="100" step="100">
-            </div>
-            <div class="control-group">
-                <label for="simulation-days-input">Simulation Days (e.g., 252 for 1 year):</label>
-                <input type="number" id="simulation-days-input" value="252" min="1" step="1">
-            </div>
-            <button id="run-monte-carlo-btn" style="margin-top: 10px;">Run Simulation</button>
-            <div id="monte-carlo-graph" style="margin-top: 10px;"></div>
-            <div id="monte-carlo-results" style="margin-top: 10px;"></div>
-        </div>
-
-        <div id="csv-upload-section" class="section-box">
-            <h2>Analyze from CSV</h2>
-            <p>Upload a CSV file containing historical ETF data.</p>
-            <p><strong>CSV Format:</strong> First column 'Date' (YYYY-MM-DD), subsequent columns are ETF Tickers (e.g., SPY, QQQ) with their Close prices.</p>
-            <input type="file" id="csv-file-input" accept=".csv" style="margin-top: 10px;">
-            <button id="analyze-csv-btn" style="margin-top: 10px;">Analyze CSV</button>
-            <div id="csv-analysis-results" style="margin-top: 10px;"></div>
-            <div id="csv-analysis-graph" style="margin-top: 10px;"></div>
-        </div>
-
-        <div id="dca-simulation-section" class="section-box">
-            <h2>Dollar-Cost Averaging Simulation</h2>
-            <p>Simulate the growth of your portfolio with regular investments.</p>
-            <div class="control-group">
-                <label for="dca-amount-input">Investment Amount:</label>
-                <input type="number" id="dca-amount-input" value="100" step="10">
-                <label for="dca-frequency-select">Frequency:</label>
-                <select id="dca-frequency-select">
-                    <option value="monthly" selected>Monthly</option>
-                    <option value="quarterly">Quarterly</option>
+                <label for="data-period-select">Data Period:</label>
+                <select id="data-period-select">
+                    <option value="1y">1 Year</option>
+                    <option value="3y">3 Years</option>
+                    <option value="5y" selected>5 Years</option>
+                    <option value="10y">10 Years</option>
                 </select>
-                <label for="dca-years-input">Simulation Years:</label>
-                <input type="number" id="dca-years-input" value="10" step="1">
-                <button id="run-dca-simulation-btn">Run Simulation</button>
+                <button id="generate-map-btn">Generate Map</button>
             </div>
-            <div id="dca-simulation-graph" style="margin-top: 10px;"></div>
-            <div id="dca-simulation-results" style="margin-top: 10px;"></div>
-        </div>
+            <div id="graph"></div>
+            <div id="portfolio-composition" class="section-box">
+                <h2>Max Sharpe Ratio Portfolio Composition</h2>
+                <div id="composition-details">Select ETFs and click 'Generate Map' to see composition.</div>
+            </div>
+    
+            <div id="custom-portfolio-section" class="section-box">
+                <h2>Create Your Custom Portfolio</h2>
+                <div id="portfolio-sliders"></div>
+                <button id="calculate-custom-portfolio-btn" style="margin-top: 10px;">Calculate Custom Portfolio</button>
+                <div id="custom-portfolio-result" style="margin-top: 10px;"></div>
+            </div>
+    
+            <div id="target-optimization-section" class="section-box">
+                <h2>Target Optimization</h2>
+                <p>Enter a target return or target risk to find the optimal portfolio.</p>
+                <div class="control-group">
+                    <label for="target-return-input">Target Return (%):</label>
+                    <input type="number" id="target-return-input" step="0.01" min="0" max="100" placeholder="e.g., 10">
+                    <button id="optimize-by-return-btn">Optimize by Return</button>
+                </div>
+                <div class="control-group">
+                    <label for="target-risk-input">Target Risk (%):</label>
+                    <input type="number" id="target-risk-input" step="0.01" min="0" max="100" placeholder="e.g., 15">
+                    <button id="optimize-by-risk-btn">Optimize by Risk</button>
+                </div>
+                <div id="target-optimization-result" style="margin-top: 10px;"></div>
+            </div>
+    
+            <div id="historical-performance-section" class="section-box">
+                <h2>Historical Performance</h2>
+                <p>View the cumulative historical performance of selected ETFs.</p>
+                <button id="show-historical-performance-btn">Show Historical Performance</button>
+                <div id="historical-performance-graph" style="margin-top: 10px;"></div>
+            </div>
+    
+            <div id="monte-carlo-section" class="section-box">
+                <h2>Monte Carlo Simulation</h2>
+                <p>Simulate future portfolio returns based on historical data.</p>
+                <div class="control-group">
+                    <label for="num-simulations-input">Number of Simulations:</label>
+                    <input type="number" id="num-simulations-input" value="1000" min="100" step="100">
+                </div>
+                <div class="control-group">
+                    <label for="simulation-days-input">Simulation Days (e.g., 252 for 1 year):</label>
+                    <input type="number" id="simulation-days-input" value="252" min="1" step="1">
+                </div>
+                <button id="run-monte-carlo-btn" style="margin-top: 10px;">Run Simulation</button>
+                <div id="monte-carlo-graph" style="margin-top: 10px;"></div>
+                <div id="monte-carlo-results" style="margin-top: 10px;"></div>
+            </div>
+    
+            <div id="csv-upload-section" class="section-box">
+                <h2>Analyze from CSV</h2>
+                <p>Upload a CSV file containing historical ETF data.</p>
+                <p><strong>CSV Format:</strong> First column 'Date' (YYYY-MM-DD), subsequent columns are ETF Tickers (e.g., SPY, QQQ) with their Close prices.</p>
+                <input type="file" id="csv-file-input" accept=".csv" style="margin-top: 10px;">
+                <button id="analyze-csv-btn" style="margin-top: 10px;">Analyze CSV</button>
+                <div id="csv-analysis-results" style="margin-top: 10px;"></div>
+                <div id="csv-analysis-graph" style="margin-top: 10px;"></div>
+            </div>
+    
+            <div id="dca-simulation-section" class="section-box">
+                <h2>Dollar-Cost Averaging Simulation</h2>
+                <p>Simulate the growth of your portfolio with regular investments.</p>
+                <div class="control-group">
+                    <label for="dca-amount-input">Investment Amount:</label>
+                    <input type="number" id="dca-amount-input" value="100" step="10">
+                    <label for="dca-frequency-select">Frequency:</label>
+                    <select id="dca-frequency-select">
+                        <option value="monthly" selected>Monthly</option>
+                        <option value="quarterly">Quarterly</option>
+                    </select>
+                    <label for="dca-years-input">Simulation Years:</label>
+                    <input type="number" id="dca-years-input" value="10" step="1">
+                    <button id="run-dca-simulation-btn">Run Simulation</button>
+                </div>
+                <div id="dca-simulation-graph" style="margin-top: 10px;"></div>
+                <div id="dca-simulation-results" style="margin-top: 10px;"></div>
+            </div>
+        </main>
     </div>
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
