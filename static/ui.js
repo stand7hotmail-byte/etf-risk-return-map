@@ -43,8 +43,13 @@ export const portfolioMessageDiv = document.getElementById('portfolio-message');
 
 // --- UI Functions ---
 
-export function createEtfCheckboxes(etfList, definitions, container) {
+export function createEtfCheckboxes(etfList, definitions, container, currentlyChecked) {
     container.innerHTML = '';
+    // If the list of ETFs to display is empty, show a message.
+    if (etfList.length === 0) {
+        container.innerHTML = '<p>No ETFs match your filter.</p>';
+        return;
+    }
     etfList.forEach(ticker => {
         const etfInfo = definitions[ticker];
         const label = document.createElement('label');
@@ -52,7 +57,8 @@ export function createEtfCheckboxes(etfList, definitions, container) {
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
         checkbox.value = ticker;
-        checkbox.checked = true; // Default to all selected
+        // Set checked state based on the set passed from the main script.
+        checkbox.checked = currentlyChecked.has(ticker);
         label.appendChild(checkbox);
         label.appendChild(document.createTextNode(ticker));
         container.appendChild(label);

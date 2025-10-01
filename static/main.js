@@ -11,22 +11,45 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize authentication
     initAuth();
 
+    const etfSearchInput = document.getElementById('etf-search-input');
+
     // --- Event Listeners ---
     ui.assetClassFilter.addEventListener('change', () => filterAndDisplayEtfs());
     ui.regionFilter.addEventListener('change', () => filterAndDisplayEtfs());
+    etfSearchInput.addEventListener('input', () => filterAndDisplayEtfs());
 
     function filterAndDisplayEtfs() {
+        // Check if the checkbox container has been populated before.
+        const isInitialLoad = ui.etfCheckboxesDiv.children.length === 0;
+
+        let currentlyChecked;
+        if (!isInitialLoad) {
+            currentlyChecked = new Set(
+                Array.from(ui.etfCheckboxesDiv.querySelectorAll('input[type="checkbox"]:checked'))
+                     .map(cb => cb.value)
+            );
+        } else {
+            currentlyChecked = new Set(Object.keys(etfDefinitions));
+        }
+
         const assetClass = ui.assetClassFilter.value;
         const region = ui.regionFilter.value;
+        const searchTerm = etfSearchInput.value.normalize('NFKC').toLowerCase();
 
         const filteredEtfs = Object.keys(etfDefinitions).filter(ticker => {
             const etf = etfDefinitions[ticker];
+            if (!etf) return false; // Safety check
+
             const assetMatch = assetClass === 'all' || etf.asset_class === assetClass;
             const regionMatch = region === 'all' || etf.region === region;
-            return assetMatch && regionMatch;
+            const searchMatch = searchTerm === '' || 
+                                ticker.toLowerCase().includes(searchTerm) || 
+                                (etf.name && etf.name.toLowerCase().includes(searchTerm)); // Safety check for name
+            return assetMatch && regionMatch && searchMatch;
         });
 
-        ui.createEtfCheckboxes(filteredEtfs, etfDefinitions, ui.etfCheckboxesDiv);
+        // Pass the set of checked tickers to the UI function.
+        ui.createEtfCheckboxes(filteredEtfs, etfDefinitions, ui.etfCheckboxesDiv, currentlyChecked);
     }
 
     // --- Main Application Logic ---
