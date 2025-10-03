@@ -47,37 +47,66 @@ export function createEtfCheckboxes(etfList, definitions, container, currentlyCh
     container.innerHTML = '';
     // If the list of ETFs to display is empty, show a message.
     if (etfList.length === 0) {
-        container.innerHTML = '<p>No ETFs match your filter.</p>';
+        container.innerHTML = '<p class="text-muted">No ETFs match your filter.</p>';
         return;
     }
     etfList.forEach(ticker => {
         const etfInfo = definitions[ticker];
-        const label = document.createElement('label');
-        label.title = etfInfo ? etfInfo.name : 'No description'; // Add tooltip
+        const div = document.createElement('div');
+        div.className = 'form-check';
+
         const checkbox = document.createElement('input');
+        checkbox.className = 'form-check-input';
         checkbox.type = 'checkbox';
         checkbox.value = ticker;
-        // Set checked state based on the set passed from the main script.
+        checkbox.id = `checkbox-${ticker}`; // Unique ID
         checkbox.checked = currentlyChecked.has(ticker);
-        label.appendChild(checkbox);
-        label.appendChild(document.createTextNode(ticker));
-        container.appendChild(label);
+
+        const label = document.createElement('label');
+        label.className = 'form-check-label';
+        label.setAttribute('for', `checkbox-${ticker}`); // Match the ID
+        label.textContent = ticker;
+        label.title = etfInfo ? etfInfo.name : 'No description';
+
+        div.appendChild(checkbox);
+        div.appendChild(label);
+        container.appendChild(div);
     });
 }
 
 export function createPortfolioSliders(tickers, container, weightsVar) {
     container.innerHTML = ''; // Clear existing sliders
-    const initialWeight = 100 / tickers.length;
+    const initialWeight = tickers.length > 0 ? 100 / tickers.length : 0;
     weightsVar = {}; // Reset weights object
 
     tickers.forEach(ticker => {
         const sliderContainer = document.createElement('div');
-        sliderContainer.style.marginBottom = '10px';
-        sliderContainer.innerHTML = `
-            <label>${ticker}: <span id="${ticker}-weight">${initialWeight.toFixed(2)}%</span></label>
-            <input type="range" min="0" max="100" value="${initialWeight}" step="0.01" data-ticker="${ticker}" style="width: 100%;">
-        `;
+        sliderContainer.className = 'mb-3';
+
+        const label = document.createElement('label');
+        label.className = 'form-label';
+        label.textContent = `${ticker}: `;
+        
+        const weightSpan = document.createElement('span');
+        weightSpan.id = `${ticker}-weight`;
+        weightSpan.className = 'fw-bold';
+        weightSpan.textContent = `${initialWeight.toFixed(2)}%`;
+        
+        label.appendChild(weightSpan);
+
+        const slider = document.createElement('input');
+        slider.className = 'form-range';
+        slider.type = 'range';
+        slider.min = 0;
+        slider.max = 100;
+        slider.value = initialWeight;
+        slider.step = 0.01;
+        slider.dataset.ticker = ticker;
+
+        sliderContainer.appendChild(label);
+        sliderContainer.appendChild(slider);
         container.appendChild(sliderContainer);
+        
         weightsVar[ticker] = initialWeight;
     });
     return weightsVar;
@@ -115,15 +144,21 @@ export function displayMessage(element, message, isError = false) {
 }
 
 export function displayPortfolioComposition(weights) {
+    compositionDetailsDiv.innerHTML = ''; // Clear previous content
+    const title = document.createElement('h5');
+    title.className = 'card-title';
+    title.textContent = 'Max Sharpe Ratio Portfolio Composition';
+    compositionDetailsDiv.appendChild(title);
+
     if (Object.keys(weights).length > 0) {
-        let compositionHtml = '<table><thead><tr><th>ETF Ticker</th><th>Weight</th></tr></thead><tbody>';
+        let tableHtml = '<table class="table table-striped table-hover table-sm mt-3"><thead><tr><th>ETF Ticker</th><th>Weight</th></tr></thead><tbody>';
         for (const ticker in weights) {
-            compositionHtml += `<tr><td>${ticker}</td><td>${(weights[ticker] * 100).toFixed(2)}%</td></tr>`;
+            tableHtml += `<tr><td>${ticker}</td><td>${(weights[ticker] * 100).toFixed(2)}%</td></tr>`;
         }
-        compositionHtml += '</tbody></table>';
-        compositionDetailsDiv.innerHTML = compositionHtml;
+        tableHtml += '</tbody></table>';
+        compositionDetailsDiv.innerHTML += tableHtml;
     } else {
-        compositionDetailsDiv.innerHTML = 'Could not calculate Max Sharpe Ratio Portfolio composition.';
+        compositionDetailsDiv.innerHTML += '<p class="text-muted mt-3">Could not calculate Max Sharpe Ratio Portfolio composition.</p>';
     }
 }
 

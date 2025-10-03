@@ -1,332 +1,316 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="ja" data-bs-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ETF Risk-Return Map</title>
-    <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script> <!-- より新しいバージョンを指定 -->
-    <script src="/static/jwt-decode.min.js"></script> <!-- Local jwt-decode.min.js -->
-        <style>
-        :root {
-            --ratio: 1.618;
-            --s0: 1rem;
-            --s-1: calc(var(--s0) / var(--ratio));
-            --s-2: calc(var(--s-1) / var(--ratio));
-            --s1: calc(var(--s0) * var(--ratio));
-            --s2: calc(var(--s1) * var(--ratio));
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
-            --color-background: #f8f9fa;
-            --color-surface: #ffffff;
-            --color-primary: #007bff;
-            --color-primary-dark: #0056b3;
-            --color-text-primary: #212529;
-            --color-text-secondary: #6c757d;
-            --color-border: #dee2e6;
-        }
-
-        * { box-sizing: border-box; }
-
+    <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+    <script src="/static/jwt-decode.min.js"></script>
+    
+    <style>
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--color-background);
-            color: var(--color-text-primary);
-            line-height: 1.5;
-            margin: 0;
+            background-color: var(--bs-secondary-bg);
         }
-        
-        .app-container {
-            display: grid;
-            grid-template-columns: 300px 1fr; /* Sidebar width and main content */
-            grid-template-rows: auto 1fr;
-            grid-template-areas: 
-                "header header"
-                "sidebar main";
+        .main-container {
+            display: flex;
+            flex-direction: column;
             height: 100vh;
         }
-
-        #app-header {
-            grid-area: header;
-            padding: var(--s0) var(--s1);
-            background-color: var(--color-surface);
-            border-bottom: 1px solid var(--color-border);
+        .content-wrapper {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
+            flex: 1;
+            overflow: hidden;
         }
-
         #sidebar {
-            grid-area: sidebar;
-            padding: var(--s1);
-            background-color: var(--color-surface);
-            border-right: 1px solid var(--color-border);
-            overflow-y: auto; /* Make sidebar scrollable if content overflows */
+            width: 320px;
+            flex-shrink: 0;
+            overflow-y: auto;
+            background-color: var(--bs-body-bg);
+            border-right: 1px solid var(--bs-border-color);
         }
-
         #main-content {
-            grid-area: main;
-            padding: var(--s1);
-            overflow-y: auto; /* Make main content scrollable */
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 1.5rem;
         }
-
-        .section-box {
-            margin-bottom: var(--s2);
-            padding: var(--s1);
-            border: 1px solid var(--color-border);
-            border-radius: var(--s-2);
-            background-color: var(--color-surface);
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-        }
-
-        h1, h2, h3 {
-            font-weight: 600;
-            line-height: 1.2;
-            color: var(--color-text-primary);
-            margin-top: 0;
-        }
-
-        h1 { font-size: var(--s2); margin-bottom: 0; }
-        h2 { font-size: var(--s1); margin-bottom: var(--s1); border-bottom: 1px solid var(--color-border); padding-bottom: var(--s-1); }
-        h3 { font-size: var(--s0); margin-bottom: var(--s-1); }
-
-        p { font-size: var(--s-1); color: var(--color-text-secondary); }
-        label { font-size: var(--s0); color: var(--color-text-secondary); font-weight: 600; }
-
-        #etf-checkboxes {
-            display: flex;
-            flex-direction: column; /* Changed from flex-wrap to a single column */
-            gap: var(--s-1);
-        }
-
-        #etf-checkboxes label {
-            display: flex;
-            align-items: center;
-            cursor: pointer;
-            font-weight: 400;
-            font-size: var(--s0);
-        }
-        input[type="checkbox"] { 
-            margin-right: var(--s-2); 
-            transform: scale(1.2);
-        }
-
-        button {
-            padding: var(--s-1) var(--s0);
-            font-size: var(--s0);
-            font-weight: 600;
-            cursor: pointer;
-            background-color: var(--color-primary);
-            color: white;
-            border: none;
-            border-radius: var(--s-2);
-            transition: background-color 0.2s ease;
-        }
-        button:hover { background-color: var(--color-primary-dark); }
-
-        select, input[type="number"], input[type="text"], input[type="password"] {
-            padding: var(--s-1) var(--s0);
-            border: 1px solid var(--color-border);
-            border-radius: var(--s-2);
-            font-size: var(--s0);
-        }
-
-        .control-group {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            gap: var(--s0);
-            margin-bottom: var(--s1);
-        }
-
-        @media (max-width: 1024px) {
-            .app-container {
-                grid-template-columns: 1fr;
-                grid-template-areas:
-                    "header"
-                    "sidebar"
-                    "main";
-            }
-            #sidebar {
-                border-right: none;
-                border-bottom: 1px solid var(--color-border);
-            }
+        #etf-checkboxes .form-check {
+            margin-bottom: 0.5rem;
         }
     </style>
 </head>
 <body>
-    <div class="app-container">
-        <header id="app-header">
-            <h1>ETF Risk-Return Map</h1>
-            <div class="auth-controls">
-                <!-- Auth and Portfolio Management will be moved or redesigned later -->
+    <div class="main-container">
+        <!-- Navbar -->
+        <nav class="navbar navbar-expand-lg bg-dark navbar-dark shadow-sm">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="#"><i class="bi bi-bullseye me-2"></i>ETF Risk-Return Map</a>
+                <div id="auth-controls">
+                    <!-- Auth buttons will be dynamically inserted here by auth.js -->
+                </div>
             </div>
-        </header>
+        </nav>
 
-        <aside id="sidebar">
-            <div class="section-box">
-                <h2>Select ETFs</h2>
-                <div id="etf-search-section" style="margin-bottom: 1rem;">
-                    <input type="text" id="etf-search-input" placeholder="Search by ticker or name..." style="width: 100%;">
+        <div class="content-wrapper">
+            <!-- Sidebar -->
+            <aside id="sidebar" class="p-3">
+                <div class="mb-3">
+                    <label for="etf-search-input" class="form-label fw-bold">Search ETFs</label>
+                    <input type="text" id="etf-search-input" class="form-control" placeholder="Search by ticker or name...">
                 </div>
-                <div id="etf-filter-section" class="control-group">
-                    <div>
-                        <label for="asset-class-filter">Asset Class:</label>
-                        <select id="asset-class-filter">
-                            <option value="all">All</option>
-                            <option value="Stock">Stock</option>
-                            <option value="Bond">Bond</option>
-                            <option value="Commodity">Commodity</option>
-                            <option value="Real Estate">Real Estate</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label for="region-filter">Region:</label>
-                        <select id="region-filter">
-                            <option value="all">All</option>
-                            <option value="US">US</option>
-                            <option value="Global">Global</option>
-                            <option value="Global ex-US">Global ex-US</option>
-                            <option value="Developed ex-US">Developed ex-US</option>
-                            <option value="Emerging">Emerging</option>
-                        </select>
-                    </div>
-                </div>
-                <div id="etf-checkboxes"></div>
-            </div>
-        </aside>
-
-        <main id="main-content">
-            <div class="auth-section section-box">
-                <h2>User Authentication</h2>
-                <div>
-                    <label for="auth-username">Username:</label>
-                    <input type="text" id="auth-username" placeholder="Enter username">
-                </div>
-                <div style="margin-top: 10px;">
-                    <label for="auth-password">Password:</label>
-                    <input type="password" id="auth-password" placeholder="Enter password">
-                </div>
-                <div style="margin-top: 15px;">
-                    <button id="register-btn">Register</button>
-                    <button id="login-btn" style="margin-left: 10px;">Login</button>
-                    <button id="google-login-btn" style="margin-left: 10px;">Login with Google</button>
-                    <button id="logout-btn" style="margin-left: 10px; display: none;">Logout</button>
-                </div>
-                <div id="auth-message" style="margin-top: 10px; color: red;"></div>
-                <div id="logged-in-user" style="margin-top: 10px; display: none;">Logged in as: <strong></strong></div>
-            </div>
-        
-            <div class="portfolio-management-section section-box">
-                <h2>Portfolio Management</h2>
-                <div style="margin-top: 10px;">
-                    <label for="portfolio-name-input">Portfolio Name:</label>
-                    <input type="text" id="portfolio-name-input" placeholder="My Portfolio 1">
-                    <button id="save-portfolio-btn">Save Portfolio</button>
-                </div>
-                <div style="margin-top: 10px;">
-                    <button id="list-portfolios-btn">List My Portfolios</button>
-                    <select id="saved-portfolios-select" style="margin-left: 10px;"></select>
-                    <button id="load-portfolio-btn" style="margin-left: 10px;">Load Selected</button>
-                    <button id="delete-portfolio-btn" style="margin-left: 10px;">Delete Selected</button>
-                </div>
-                <div id="portfolio-message" style="margin-top: 10px; color: blue;"></div>
-            </div>
-
-            <div class="control-group">
-                <label for="data-period-select">Data Period:</label>
-                <select id="data-period-select">
-                    <option value="1y">1 Year</option>
-                    <option value="3y">3 Years</option>
-                    <option value="5y" selected>5 Years</option>
-                    <option value="10y">10 Years</option>
-                </select>
-                <button id="generate-map-btn">Generate Map</button>
-            </div>
-            <div id="graph"></div>
-            <div id="portfolio-composition" class="section-box">
-                <h2>Max Sharpe Ratio Portfolio Composition</h2>
-                <div id="composition-details">Select ETFs and click 'Generate Map' to see composition.</div>
-            </div>
-    
-            <div id="custom-portfolio-section" class="section-box">
-                <h2>Create Your Custom Portfolio</h2>
-                <div id="portfolio-sliders"></div>
-                <button id="calculate-custom-portfolio-btn" style="margin-top: 10px;">Calculate Custom Portfolio</button>
-                <div id="custom-portfolio-result" style="margin-top: 10px;"></div>
-            </div>
-    
-            <div id="target-optimization-section" class="section-box">
-                <h2>Target Optimization</h2>
-                <p>Enter a target return or target risk to find the optimal portfolio.</p>
-                <div class="control-group">
-                    <label for="target-return-input">Target Return (%):</label>
-                    <input type="number" id="target-return-input" step="0.01" min="0" max="100" placeholder="e.g., 10">
-                    <button id="optimize-by-return-btn">Optimize by Return</button>
-                </div>
-                <div class="control-group">
-                    <label for="target-risk-input">Target Risk (%):</label>
-                    <input type="number" id="target-risk-input" step="0.01" min="0" max="100" placeholder="e.g., 15">
-                    <button id="optimize-by-risk-btn">Optimize by Risk</button>
-                </div>
-                <div id="target-optimization-result" style="margin-top: 10px;"></div>
-            </div>
-    
-            <div id="historical-performance-section" class="section-box">
-                <h2>Historical Performance</h2>
-                <p>View the cumulative historical performance of selected ETFs.</p>
-                <button id="show-historical-performance-btn">Show Historical Performance</button>
-                <div id="historical-performance-graph" style="margin-top: 10px;"></div>
-            </div>
-    
-            <div id="monte-carlo-section" class="section-box">
-                <h2>Monte Carlo Simulation</h2>
-                <p>Simulate future portfolio returns based on historical data.</p>
-                <div class="control-group">
-                    <label for="num-simulations-input">Number of Simulations:</label>
-                    <input type="number" id="num-simulations-input" value="1000" min="100" step="100">
-                </div>
-                <div class="control-group">
-                    <label for="simulation-days-input">Simulation Days (e.g., 252 for 1 year):</label>
-                    <input type="number" id="simulation-days-input" value="252" min="1" step="1">
-                </div>
-                <button id="run-monte-carlo-btn" style="margin-top: 10px;">Run Simulation</button>
-                <div id="monte-carlo-graph" style="margin-top: 10px;"></div>
-                <div id="monte-carlo-results" style="margin-top: 10px;"></div>
-            </div>
-    
-            <div id="csv-upload-section" class="section-box">
-                <h2>Analyze from CSV</h2>
-                <p>Upload a CSV file containing historical ETF data.</p>
-                <p><strong>CSV Format:</strong> First column 'Date' (YYYY-MM-DD), subsequent columns are ETF Tickers (e.g., SPY, QQQ) with their Close prices.</p>
-                <input type="file" id="csv-file-input" accept=".csv" style="margin-top: 10px;">
-                <button id="analyze-csv-btn" style="margin-top: 10px;">Analyze CSV</button>
-                <div id="csv-analysis-results" style="margin-top: 10px;"></div>
-                <div id="csv-analysis-graph" style="margin-top: 10px;"></div>
-            </div>
-    
-            <div id="dca-simulation-section" class="section-box">
-                <h2>Dollar-Cost Averaging Simulation</h2>
-                <p>Simulate the growth of your portfolio with regular investments.</p>
-                <div class="control-group">
-                    <label for="dca-amount-input">Investment Amount:</label>
-                    <input type="number" id="dca-amount-input" value="100" step="10">
-                    <label for="dca-frequency-select">Frequency:</label>
-                    <select id="dca-frequency-select">
-                        <option value="monthly" selected>Monthly</option>
-                        <option value="quarterly">Quarterly</option>
+                <div class="mb-3">
+                    <label for="asset-class-filter" class="form-label fw-bold">Asset Class</label>
+                    <select id="asset-class-filter" class="form-select">
+                        <option value="all">All</option>
+                        <option value="Stock">Stock</option>
+                        <option value="Bond">Bond</option>
+                        <option value="Commodity">Commodity</option>
+                        <option value="Real Estate">Real Estate</option>
                     </select>
-                    <label for="dca-years-input">Simulation Years:</label>
-                    <input type="number" id="dca-years-input" value="10" step="1">
-                    <button id="run-dca-simulation-btn">Run Simulation</button>
                 </div>
-                <div id="dca-simulation-graph" style="margin-top: 10px;"></div>
-                <div id="dca-simulation-results" style="margin-top: 10px;"></div>
-            </div>
-        </main>
+                <div class="mb-3">
+                    <label for="region-filter" class="form-label fw-bold">Region</label>
+                    <select id="region-filter" class="form-select">
+                        <option value="all">All</option>
+                        <option value="US">US</option>
+                        <option value="Global">Global</option>
+                        <option value="Global ex-US">Global ex-US</option>
+                        <option value="Developed ex-US">Developed ex-US</option>
+                        <option value="Emerging">Emerging</option>
+                    </select>
+                </div>
+                <hr>
+                <div id="etf-checkboxes" class="mt-3"></div>
+            </aside>
+
+            <!-- Main Content -->
+            <main id="main-content">
+                <!-- Auth & Portfolio Management -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Management</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6><i class="bi bi-person-circle me-2"></i>User Authentication</h6>
+                                <div class="auth-section mb-3">
+                                    <div class="input-group mb-2">
+                                        <span class="input-group-text" style="width: 100px;">Username</span>
+                                        <input type="text" id="auth-username" class="form-control" placeholder="Enter username">
+                                    </div>
+                                    <div class="input-group mb-2">
+                                        <span class="input-group-text" style="width: 100px;">Password</span>
+                                        <input type="password" id="auth-password" class="form-control" placeholder="Enter password">
+                                    </div>
+                                    <div id="auth-buttons">
+                                        <button id="register-btn" class="btn btn-secondary btn-sm">Register</button>
+                                        <button id="login-btn" class="btn btn-primary btn-sm">Login</button>
+                                        <button id="google-login-btn" class="btn btn-danger btn-sm">Login with Google</button>
+                                        <button id="logout-btn" class="btn btn-outline-secondary btn-sm" style="display: none;">Logout</button>
+                                    </div>
+                                    <div id="auth-message" class="form-text text-danger mt-2"></div>
+                                    <div id="logged-in-user" class="form-text text-success mt-2" style="display: none;">Logged in as: <strong></strong></div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <h6><i class="bi bi-briefcase-fill me-2"></i>Portfolio Management</h6>
+                                <div class="portfolio-management-section">
+                                    <div class="input-group mb-2">
+                                        <input type="text" id="portfolio-name-input" class="form-control" placeholder="My Portfolio 1">
+                                        <button id="save-portfolio-btn" class="btn btn-outline-primary">Save</button>
+                                    </div>
+                                    <div class="input-group">
+                                        <select id="saved-portfolios-select" class="form-select"></select>
+                                        <button id="load-portfolio-btn" class="btn btn-outline-secondary">Load</button>
+                                        <button id="delete-portfolio-btn" class="btn btn-outline-danger">Delete</button>
+                                        <button id="list-portfolios-btn" class="btn btn-outline-info"><i class="bi bi-arrow-clockwise"></i></button>
+                                    </div>
+                                    <div id="portfolio-message" class="form-text mt-2"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Main Analysis Area -->
+                <div class="d-flex align-items-center mb-3">
+                    <label for="data-period-select" class="form-label me-2 mb-0">Data Period:</label>
+                    <select id="data-period-select" class="form-select me-3" style="width: 150px;">
+                        <option value="1y">1 Year</option>
+                        <option value="3y">3 Years</option>
+                        <option value="5y" selected>5 Years</option>
+                        <option value="10y">10 Years</option>
+                    </select>
+                    <button id="generate-map-btn" class="btn btn-primary"><i class="bi bi-arrows-fullscreen me-2"></i>Generate Map</button>
+                </div>
+
+                <!-- Tabs -->
+                <ul class="nav nav-tabs" id="main-tabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="map-tab" data-bs-toggle="tab" data-bs-target="#map-tab-pane" type="button" role="tab">Risk-Return Map</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="custom-tab" data-bs-toggle="tab" data-bs-target="#custom-tab-pane" type="button" role="tab">Custom Portfolio</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="advanced-tab" data-bs-toggle="tab" data-bs-target="#advanced-tab-pane" type="button" role="tab">Advanced Tools</button>
+                    </li>
+                </ul>
+
+                <!-- Tab Content -->
+                <div class="tab-content" id="main-tabs-content">
+                    <!-- Risk-Return Map Pane -->
+                    <div class="tab-pane fade show active" id="map-tab-pane" role="tabpanel">
+                        <div class="card mt-3">
+                            <div class="card-body">
+                                <div id="graph" style="height: 60vh;"></div>
+                                <hr>
+                                <div id="portfolio-composition">
+                                    <h5 class="card-title">Max Sharpe Ratio Portfolio Composition</h5>
+                                    <div id="composition-details">Select ETFs and click 'Generate Map' to see composition.</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Custom Portfolio Pane -->
+                    <div class="tab-pane fade" id="custom-tab-pane" role="tabpanel">
+                        <div class="card mt-3">
+                            <div class="card-body">
+                                <h5 class="card-title">Create Your Custom Portfolio</h5>
+                                <div id="portfolio-sliders"></div>
+                                <button id="calculate-custom-portfolio-btn" class="btn btn-success mt-3">Calculate Custom Portfolio</button>
+                                <div id="custom-portfolio-result" class="mt-3"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Advanced Tools Pane -->
+                    <div class="tab-pane fade" id="advanced-tab-pane" role="tabpanel">
+                        <div class="accordion mt-3" id="advanced-tools-accordion">
+                            <!-- Target Optimization -->
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-optimize">
+                                        Target Optimization
+                                    </button>
+                                </h2>
+                                <div id="collapse-optimize" class="accordion-collapse collapse">
+                                    <div class="accordion-body">
+                                        <p>Enter a target return or risk to find the optimal portfolio.</p>
+                                        <div class="input-group mb-2">
+                                            <span class="input-group-text">Target Return (%)</span>
+                                            <input type="number" id="target-return-input" class="form-control" step="0.01" min="0" max="100" placeholder="e.g., 10">
+                                            <button id="optimize-by-return-btn" class="btn btn-outline-secondary">Optimize</button>
+                                        </div>
+                                        <div class="input-group mb-2">
+                                            <span class="input-group-text">Target Risk (%)</span>
+                                            <input type="number" id="target-risk-input" class="form-control" step="0.01" min="0" max="100" placeholder="e.g., 15">
+                                            <button id="optimize-by-risk-btn" class="btn btn-outline-secondary">Optimize</button>
+                                        </div>
+                                        <div id="target-optimization-result" class="mt-2"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Historical Performance -->
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-historical">
+                                        Historical Performance
+                                    </button>
+                                </h2>
+                                <div id="collapse-historical" class="accordion-collapse collapse">
+                                    <div class="accordion-body">
+                                        <p>View the cumulative historical performance of selected ETFs.</p>
+                                        <button id="show-historical-performance-btn" class="btn btn-info">Show Performance</button>
+                                        <div id="historical-performance-graph" class="mt-2"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Monte Carlo -->
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-monte-carlo">
+                                        Monte Carlo Simulation
+                                    </button>
+                                </h2>
+                                <div id="collapse-monte-carlo" class="accordion-collapse collapse">
+                                    <div class="accordion-body">
+                                        <p>Simulate future portfolio returns based on historical data.</p>
+                                        <div class="row">
+                                            <div class="col-md-6"><input type="number" id="num-simulations-input" value="1000" min="100" step="100" class="form-control" placeholder="Number of Simulations"></div>
+                                            <div class="col-md-6"><input type="number" id="simulation-days-input" value="252" min="1" step="1" class="form-control" placeholder="Simulation Days"></div>
+                                        </div>
+                                        <button id="run-monte-carlo-btn" class="btn btn-info mt-2">Run Simulation</button>
+                                        <div id="monte-carlo-graph" class="mt-2"></div>
+                                        <div id="monte-carlo-results" class="mt-2"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- DCA Simulation -->
+                             <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-dca">
+                                        Dollar-Cost Averaging Simulation
+                                    </button>
+                                </h2>
+                                <div id="collapse-dca" class="accordion-collapse collapse">
+                                    <div class="accordion-body">
+                                        <p>Simulate the growth of your portfolio with regular investments.</p>
+                                        <div class="input-group">
+                                            <span class="input-group-text">Amount</span>
+                                            <input type="number" id="dca-amount-input" value="100" step="10" class="form-control">
+                                            <span class="input-group-text">Frequency</span>
+                                            <select id="dca-frequency-select" class="form-select">
+                                                <option value="monthly" selected>Monthly</option>
+                                                <option value="quarterly">Quarterly</option>
+                                            </select>
+                                            <span class="input-group-text">Years</span>
+                                            <input type="number" id="dca-years-input" value="10" step="1" class="form-control">
+                                            <button id="run-dca-simulation-btn" class="btn btn-info">Run</button>
+                                        </div>
+                                        <div id="dca-simulation-graph" class="mt-2"></div>
+                                        <div id="dca-simulation-results" class="mt-2"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- CSV Upload -->
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-csv">
+                                        Analyze from CSV
+                                    </button>
+                                </h2>
+                                <div id="collapse-csv" class="accordion-collapse collapse">
+                                    <div class="accordion-body">
+                                        <p>Upload a CSV file with historical data (Date, TICKER1, TICKER2, ...)</p>
+                                        <div class="input-group">
+                                            <input type="file" id="csv-file-input" class="form-control" accept=".csv">
+                                            <button id="analyze-csv-btn" class="btn btn-info">Analyze</button>
+                                        </div>
+                                        <div id="csv-analysis-results" class="mt-2"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
     </div>
+
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-
+    
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    
     <script type="module" src="/static/main.js"></script>
 </body>
 </html>

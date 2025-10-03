@@ -19,30 +19,49 @@ const loggedInUserDiv = document.getElementById('logged-in-user');
 // --- Private Functions ---
 
 function updateAuthUI() {
+    const authControlsNavbar = document.getElementById('auth-controls');
+    const portfolioManagementSection = document.querySelector('.portfolio-management-section');
+
+    // Clear navbar controls
+    authControlsNavbar.innerHTML = '';
+
     if (accessToken) {
         try {
             const decodedToken = jwt_decode(accessToken);
-            loginBtn.style.display = 'none';
-            googleLoginBtn.style.display = 'none';
-            registerBtn.style.display = 'none';
-            logoutBtn.style.display = 'inline-block';
-            loggedInUserDiv.style.display = 'block';
-            loggedInUserDiv.querySelector('strong').textContent = decodedToken.sub;
+            // --- Update Navbar ---
+            const userInfo = document.createElement('span');
+            userInfo.className = 'navbar-text me-3';
+            userInfo.textContent = `Welcome, ${decodedToken.sub}`;
+
+            const logoutButtonNavbar = document.createElement('button');
+            logoutButtonNavbar.className = 'btn btn-outline-light btn-sm';
+            logoutButtonNavbar.textContent = 'Logout';
+            logoutButtonNavbar.addEventListener('click', handleLogout);
+
+            authControlsNavbar.appendChild(userInfo);
+            authControlsNavbar.appendChild(logoutButtonNavbar);
+
+            // --- Update Main Content ---
+            document.querySelector('.auth-section').style.display = 'none';
+            portfolioManagementSection.style.display = 'block';
+
         } catch (e) {
             console.error("Error decoding JWT:", e);
             accessToken = null;
             localStorage.removeItem('access_token');
-            authMessageDiv.style.color = 'red';
             authMessageDiv.textContent = 'Invalid token. Please log in again.';
-            updateAuthUI(); // Rerun to reset UI to logged-out state
+            updateAuthUI(); // Rerun to reset UI
         }
     } else {
-        loginBtn.style.display = 'inline-block';
-        googleLoginBtn.style.display = 'inline-block';
-        registerBtn.style.display = 'inline-block';
-        logoutBtn.style.display = 'none';
-        loggedInUserDiv.style.display = 'none';
-        loggedInUserDiv.querySelector('strong').textContent = '';
+        // --- Update Navbar ---
+        const loginPrompt = document.createElement('span');
+        loginPrompt.className = 'navbar-text text-muted';
+        loginPrompt.textContent = 'Please log in to manage portfolios.';
+        authControlsNavbar.appendChild(loginPrompt);
+
+        // --- Update Main Content ---
+        document.querySelector('.auth-section').style.display = 'block';
+        portfolioManagementSection.style.display = 'none';
     }
 }
 
