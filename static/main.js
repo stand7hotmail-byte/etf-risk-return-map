@@ -456,6 +456,19 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
+    ui.showCorrelationMatrixBtn.addEventListener('click', async () => {
+        const selectedTickers = Array.from(ui.etfCheckboxesDiv.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
+        if (selectedTickers.length < 2) return alert('Please select at least two ETFs to calculate correlation.');
+        const period = ui.dataPeriodSelect.value;
+        try {
+            const correlationData = await api.getCorrelationMatrix(selectedTickers, period);
+            if (correlationData.error) throw new Error(correlationData.error);
+            ui.drawCorrelationHeatmap(correlationData, ui.correlationMatrixGraphDiv);
+        } catch (error) {
+            ui.correlationMatrixGraphDiv.innerHTML = `<p style="color: red;">${error.message}</p>`;
+        }
+    });
+
     // --- Initial Page Load ---
     async function initializeApp() {
         try {

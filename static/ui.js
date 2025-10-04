@@ -18,6 +18,8 @@ export const optimizeByRiskBtn = document.getElementById('optimize-by-risk-btn')
 export const targetOptimizationResultDiv = document.getElementById('target-optimization-result');
 export const showHistoricalPerformanceBtn = document.getElementById('show-historical-performance-btn');
 export const historicalPerformanceGraphDiv = document.getElementById('historical-performance-graph');
+export const showCorrelationMatrixBtn = document.getElementById('show-correlation-matrix-btn');
+export const correlationMatrixGraphDiv = document.getElementById('correlation-matrix-graph');
 export const numSimulationsInput = document.getElementById('num-simulations-input');
 export const simulationDaysInput = document.getElementById('simulation-days-input');
 export const runMonteCarloBtn = document.getElementById('run-monte-carlo-btn');
@@ -176,4 +178,24 @@ export function addTrace(traceData) {
 
 export function clearGraph(graphId) {
     Plotly.purge(graphId);
+}
+
+export function drawCorrelationHeatmap(data, containerId) {
+    const trace = {
+        x: data.x,
+        y: data.y,
+        z: data.z,
+        type: 'heatmap',
+        colorscale: 'Viridis',
+        zmin: -1,
+        zmax: 1
+    };
+
+    const layout = {
+        title: 'Correlation Matrix',
+        xaxis: { automargin: true },
+        yaxis: { automargin: true }
+    };
+
+    Plotly.newPlot(containerId, [trace], layout);
 }

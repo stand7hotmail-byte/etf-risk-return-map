@@ -906,3 +906,32 @@ async def run_future_dca_simulation(request: FutureDcaSimulationRequest):
 
     except Exception as e:
         return {"error": f"Error running future DCA simulation: {str(e)}"}
+
+@app.post("/correlation_matrix")
+async def get_correlation_matrix(request: HistoricalPerformanceRequest):
+    tickers = request.tickers
+    period = request.period
+
+    if not tickers:
+        return {"error": "No tickers provided."}
+
+    try:
+        # Fetch historical data
+        data = yf.download(tickers, period=period, interval="1d")
+        data = data.xs('Close', level='Price', axis=1)
+        
+        # Calculate daily returns
+        returns = data.pct_change().dropna()
+        
+        # Calculate correlation matrix
+        correlation_matrix = returns.corr()
+        
+        # Format for Plotly heatmap
+        return {
+            "x": correlation_matrix.columns.tolist(),
+            "y": correlation_matrix.index.tolist(),
+            "z": correlation_matrix.values.tolist()
+        }
+
+    except Exception as e:
+        return {"error": f"Error calculating correlation matrix: {str(e)}"}

@@ -142,3 +142,7 @@ export async function runFutureDcaSimulation(portfolioReturn, portfolioRisk, inv
         years: years 
     });
 }
+
+export async function getCorrelationMatrix(tickers, period) {
+    return post('/correlation_matrix', { tickers, period });
+}
