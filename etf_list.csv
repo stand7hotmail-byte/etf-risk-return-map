@@ -58,3 +58,18 @@ EWJ,Stock,Japan,iShares MSCI Japan ETF
 EWG,Stock,Germany,iShares MSCI Germany ETF
 EWU,Stock,UK,iShares MSCI United Kingdom ETF
 EWC,Stock,Canada,iShares MSCI Canada ETF
+SCHD,Stock,US,Schwab U.S. Dividend Equity ETF
+JEPI,Stock,US,JPMorgan Equity Premium Income ETF
+JEPQ,Stock,US,JPMorgan Nasdaq Equity Premium Income ETF
+SOXX,Stock,Global,iShares Semiconductor ETF
+ARKK,Stock,Global,ARK Innovation ETF
+LIT,Stock,Global,Global X Lithium & Battery Tech ETF
+INDA,Stock,India,iShares MSCI India ETF
+EWZ,Stock,Brazil,iShares MSCI Brazil ETF
+LQD,Bond,US,iShares iBoxx $ Investment Grade Corporate Bond ETF
+JNK,Bond,US,SPDR Bloomberg High Yield Bond ETF
+REM,Real Estate,US,iShares Mortgage Real Estate ETF
+SRVR,Real Estate,Global,Pacer Data & Infrastructure Real Estate ETF
+IBIT,Crypto,Global,iShares Bitcoin Trust
+FBTC,Crypto,Global,Fidelity Wise Origin Bitcoin Fund
+BITB,Crypto,Global,Bitwise Bitcoin ETF
