@@ -43,8 +43,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const assetMatch = assetClass === 'all' || etf.asset_class === assetClass;
             const regionMatch = region === 'all' || etf.region === region;
             const searchMatch = searchTerm === '' || 
-                                ticker.toLowerCase().includes(searchTerm) || 
-                                (etf.name && etf.name.toLowerCase().includes(searchTerm)); // Safety check for name
+                                ticker.toLowerCase().includes(searchTerm);
             return assetMatch && regionMatch && searchMatch;
         });
 
