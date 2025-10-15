@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let currentWeights = {};
 
     let etfDefinitions = {}; // To store ETF metadata
+    let masterCheckedState = new Set(); // Persistent state for all checkboxes
 
     // Initialize authentication
     initAuth();
@@ -18,37 +19,51 @@ document.addEventListener('DOMContentLoaded', function() {
     ui.regionFilter.addEventListener('change', () => filterAndDisplayEtfs());
     etfSearchInput.addEventListener('input', () => filterAndDisplayEtfs());
 
-    function filterAndDisplayEtfs() {
-        // Check if the checkbox container has been populated before.
-        const isInitialLoad = ui.etfCheckboxesDiv.children.length === 0;
+    ui.selectAllBtn.addEventListener('click', () => {
+        const visibleTickers = getCurrentlyFilteredTickers();
+        visibleTickers.forEach(ticker => masterCheckedState.add(ticker));
+        filterAndDisplayEtfs();
+    });
 
-        let currentlyChecked;
-        if (!isInitialLoad) {
-            currentlyChecked = new Set(
-                Array.from(ui.etfCheckboxesDiv.querySelectorAll('input[type="checkbox"]:checked'))
-                     .map(cb => cb.value)
-            );
-        } else {
-            currentlyChecked = new Set(Object.keys(etfDefinitions));
+    ui.deselectAllBtn.addEventListener('click', () => {
+        const visibleTickers = getCurrentlyFilteredTickers();
+        visibleTickers.forEach(ticker => masterCheckedState.delete(ticker));
+        filterAndDisplayEtfs();
+    });
+
+    // Listen for changes on the checkbox container
+    ui.etfCheckboxesDiv.addEventListener('change', (event) => {
+        if (event.target.type === 'checkbox') {
+            const ticker = event.target.value;
+            if (event.target.checked) {
+                masterCheckedState.add(ticker);
+            } else {
+                masterCheckedState.delete(ticker);
+            }
         }
+    });
 
+    // Helper function to get the currently visible tickers based on filters
+    function getCurrentlyFilteredTickers() {
         const assetClass = ui.assetClassFilter.value;
         const region = ui.regionFilter.value;
         const searchTerm = etfSearchInput.value.normalize('NFKC').toLowerCase();
 
-        const filteredEtfs = Object.keys(etfDefinitions).filter(ticker => {
+        return Object.keys(etfDefinitions).filter(ticker => {
             const etf = etfDefinitions[ticker];
-            if (!etf) return false; // Safety check
+            if (!etf) return false;
 
             const assetMatch = assetClass === 'all' || etf.asset_class === assetClass;
             const regionMatch = region === 'all' || etf.region === region;
-            const searchMatch = searchTerm === '' || 
-                                ticker.toLowerCase().includes(searchTerm);
+            const searchMatch = searchTerm === '' || ticker.toLowerCase().includes(searchTerm);
             return assetMatch && regionMatch && searchMatch;
         });
+    }
 
-        // Pass the set of checked tickers to the UI function.
-        ui.createEtfCheckboxes(filteredEtfs, etfDefinitions, ui.etfCheckboxesDiv, currentlyChecked);
+    // Main function to update the checkbox UI
+    function filterAndDisplayEtfs() {
+        const filteredEtfs = getCurrentlyFilteredTickers();
+        ui.createEtfCheckboxes(filteredEtfs, etfDefinitions, ui.etfCheckboxesDiv, masterCheckedState);
     }
 
     // --- Main Application Logic ---
@@ -472,8 +487,9 @@ document.addEventListener('DOMContentLoaded', function() {
     async function initializeApp() {
         try {
             etfDefinitions = await api.getEtfList();
+            masterCheckedState = new Set(Object.keys(etfDefinitions)); // Initialize master state
             filterAndDisplayEtfs(); // Initial display based on default filters
-            generateMap(); // Initial map generation
+            // generateMap(); // Optional: decide if you want to auto-generate map on load
         } catch (error) {
             console.error('Initialization failed:', error);
             alert('Could not initialize the application. Please check the console for errors.');

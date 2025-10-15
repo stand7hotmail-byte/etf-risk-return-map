@@ -4,6 +4,8 @@
 export const etfCheckboxesDiv = document.getElementById('etf-checkboxes');
 export const assetClassFilter = document.getElementById('asset-class-filter');
 export const regionFilter = document.getElementById('region-filter');
+export const selectAllBtn = document.getElementById('select-all-btn');
+export const deselectAllBtn = document.getElementById('deselect-all-btn');
 
 export const generateMapBtn = document.getElementById('generate-map-btn');
 export const dataPeriodSelect = document.getElementById('data-period-select');
