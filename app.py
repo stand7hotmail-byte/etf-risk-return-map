@@ -9,7 +9,7 @@ import yfinance as yf
 import pandas as pd
 import numpy as np
 from scipy.optimize import minimize
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, Text, UniqueConstraint
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.declarative import declarative_base
@@ -154,8 +154,8 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
 
 # Pydanticモデル (認証用)
 class UserCreate(BaseModel):
-    username: str
-    password: str
+    username: str = Field(..., max_length=50)
+    password: str = Field(..., max_length=128)
 
 class UserInDB(BaseModel):
     username: str
