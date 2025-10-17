@@ -2,8 +2,11 @@ fastapi
 uvicorn
 yfinance
 pandas
-
 numpy
 scipy
 Jinja2
 firebase-admin
+SQLAlchemy
+passlib[bcrypt]
+python-jose[cryptography]
+python-multipart

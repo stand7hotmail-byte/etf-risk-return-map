@@ -24,7 +24,7 @@ from firebase_admin import credentials, auth
 import time
 
 # Firebase Admin SDKの初期化
-cred = credentials.Certificate("C:\\Users\\stand\\Desktop\\etf_webapp\\etf-webapp-firebase-adminsdk-fbsvc-96649b4b25.json")
+cred = credentials.Certificate("etf-webapp-firebase-adminsdk-fbsvc-96649b4b25.json")
 firebase_admin.initialize_app(cred)
 
 
