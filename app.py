@@ -980,3 +980,21 @@ async def get_correlation_matrix(request: HistoricalPerformanceRequest):
 
     except Exception as e:
         return {"error": f"Error calculating correlation matrix: {str(e)}"}
+
+@app.get("/etf_details/{ticker}")
+async def get_etf_details(ticker: str):
+    try:
+        etf = yf.Ticker(ticker)
+        info = etf.info
+
+        # Extract relevant data with fallbacks for missing keys
+        details = {
+            "longName": info.get("longName", "N/A"),
+            "summary": info.get("longBusinessSummary", "N/A"),
+            "totalAssets": info.get("totalAssets", 0),
+            "yield": info.get("trailingAnnualDividendYield", 0),
+            "expenseRatio": info.get("annualReportExpenseRatio", 0),
+        }
+        return details
+    except Exception as e:
+        raise HTTPException(status_code=404, detail=f"Could not fetch details for {ticker}: {str(e)}")

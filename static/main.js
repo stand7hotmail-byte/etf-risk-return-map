@@ -43,6 +43,43 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
+    // --- Popover Logic ---
+    const etfDetailCache = {};
+    const sidebar = document.getElementById('sidebar');
+
+    sidebar.addEventListener('show.bs.popover', async (event) => {
+        const triggerElement = event.target;
+        const ticker = triggerElement.dataset.ticker;
+        const popover = bootstrap.Popover.getInstance(triggerElement);
+
+        if (!ticker) return;
+
+        // Check cache first
+        if (etfDetailCache[ticker]) {
+            popover.setContent({ '.popover-body': etfDetailCache[ticker] });
+            return;
+        }
+
+        // Fetch data, update popover, and cache it
+        try {
+            const details = await api.getEtfDetails(ticker);
+            const contentHtml = `
+                <p><strong>Total Assets:</strong> ${(details.totalAssets || 0).toLocaleString()}</p>
+                <p><strong>Yield:</strong> ${details.yield ? (details.yield * 100).toFixed(2) + '%' : 'N/A'}</p>
+                <p><strong>Expense Ratio:</strong> ${details.expenseRatio ? (details.expenseRatio * 100).toFixed(2) + '%' : 'N/A'}</p>
+                <hr>
+                <p class="text-muted small">${details.summary || 'No summary available.'}</p>
+            `;
+            etfDetailCache[ticker] = contentHtml;
+            popover.setContent({ '.popover-body': contentHtml });
+        } catch (error) {
+            const errorHtml = `<p class="text-danger">${error.message}</p>`;
+            etfDetailCache[ticker] = errorHtml; // Cache the error state too
+            popover.setContent({ '.popover-body': errorHtml });
+        }
+    });
+
+
     // Helper function to get the currently visible tickers based on filters
     function getCurrentlyFilteredTickers() {
         const assetClass = ui.assetClassFilter.value;
@@ -64,6 +101,10 @@ document.addEventListener('DOMContentLoaded', function() {
     function filterAndDisplayEtfs() {
         const filteredEtfs = getCurrentlyFilteredTickers();
         ui.createEtfCheckboxes(filteredEtfs, etfDefinitions, ui.etfCheckboxesDiv, masterCheckedState);
+
+        // Initialize popovers after they are created
+        const popoverTriggerList = document.querySelectorAll('[data-bs-toggle="popover"]');
+        [...popoverTriggerList].map(popoverTriggerEl => new bootstrap.Popover(popoverTriggerEl));
     }
 
     // --- Main Application Logic ---

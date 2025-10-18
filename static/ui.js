@@ -49,7 +49,6 @@ export const portfolioMessageDiv = document.getElementById('portfolio-message');
 
 export function createEtfCheckboxes(etfList, definitions, container, currentlyChecked) {
     container.innerHTML = '';
-    // If the list of ETFs to display is empty, show a message.
     if (etfList.length === 0) {
         container.innerHTML = '<p class="text-muted">No ETFs match your filter.</p>';
         return;
@@ -57,23 +56,34 @@ export function createEtfCheckboxes(etfList, definitions, container, currentlyCh
     etfList.forEach(ticker => {
         const etfInfo = definitions[ticker];
         const div = document.createElement('div');
-        div.className = 'form-check';
+        div.className = 'form-check d-flex align-items-center';
 
         const checkbox = document.createElement('input');
         checkbox.className = 'form-check-input';
         checkbox.type = 'checkbox';
         checkbox.value = ticker;
-        checkbox.id = `checkbox-${ticker}`; // Unique ID
+        checkbox.id = `checkbox-${ticker}`;
         checkbox.checked = currentlyChecked.has(ticker);
 
         const label = document.createElement('label');
-        label.className = 'form-check-label';
-        label.setAttribute('for', `checkbox-${ticker}`); // Match the ID
+        label.className = 'form-check-label me-2';
+        label.setAttribute('for', `checkbox-${ticker}`);
         label.textContent = ticker;
-        label.title = etfInfo ? etfInfo.name : 'No description';
+
+        const popoverTrigger = document.createElement('span');
+        popoverTrigger.className = 'badge bg-light text-dark rounded-pill ms-auto'; // Use ms-auto to push to the right
+        popoverTrigger.style.cursor = 'pointer';
+        popoverTrigger.innerHTML = '<i class="bi bi-info-lg"></i>';
+        popoverTrigger.setAttribute('data-bs-toggle', 'popover');
+        popoverTrigger.setAttribute('data-bs-trigger', 'click'); // Changed to click
+        popoverTrigger.setAttribute('data-bs-title', etfInfo.name || ticker);
+        popoverTrigger.setAttribute('data-ticker', ticker); // Add ticker data attribute
+        popoverTrigger.setAttribute('data-bs-content', 'Loading...'); // Default content
+        popoverTrigger.setAttribute('data-bs-html', 'true');
 
         div.appendChild(checkbox);
         div.appendChild(label);
+        div.appendChild(popoverTrigger);
         container.appendChild(div);
     });
 }

@@ -146,3 +146,12 @@ export async function runFutureDcaSimulation(portfolioReturn, portfolioRisk, inv
 export async function getCorrelationMatrix(tickers, period) {
     return post('/correlation_matrix', { tickers, period });
 }
+
+export async function getEtfDetails(ticker) {
+    const response = await fetch(`/etf_details/${ticker}`);
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Failed to fetch ETF details');
+    }
+    return response.json();
+}
