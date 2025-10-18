@@ -109,7 +109,10 @@
                                     </div>
                                     <div class="input-group mb-2">
                                         <span class="input-group-text" style="width: 100px;">Password</span>
-                                        <input type="password" id="auth-password" class="form-control" placeholder="Enter password" maxlength="128">
+                                        <input type="password" id="auth-password" class="form-control" placeholder="Enter password" maxlength="128" aria-describedby="password-help-block">
+                                    </div>
+                                    <div id="password-help-block" class="form-text">
+                                        Must be at least 8 characters long and contain an uppercase letter, a lowercase letter, and a number.
                                     </div>
                                     <div id="auth-buttons">
                                         <button id="register-btn" class="btn btn-secondary btn-sm">Register</button>

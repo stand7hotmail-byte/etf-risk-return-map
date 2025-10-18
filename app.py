@@ -172,9 +172,27 @@ class TokenData(BaseModel):
 class GoogleToken(BaseModel):
     token: str
 
+import re
+
+def is_password_strong_enough(password: str) -> bool:
+    if len(password) < 8:
+        return False
+    if not re.search(r"[a-z]", password):
+        return False
+    if not re.search(r"[A-Z]", password):
+        return False
+    if not re.search(r"[0-9]", password):
+        return False
+    return True
+
 # ユーザー登録エンドポイント
 @app.post("/register", response_model=UserInDB)
 async def register_user(user: UserCreate, db: Session = Depends(get_db)):
+    if not is_password_strong_enough(user.password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Password is not strong enough. It must be at least 8 characters long and include at least one uppercase letter, one lowercase letter, and one number."
+        )
     hashed_password = get_password_hash(user.password)
     db_user = User(username=user.username, hashed_password=hashed_password)
     try:
