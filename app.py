@@ -1,6 +1,9 @@
 
 
 from fastapi import FastAPI, Request, Query, Depends, HTTPException, status
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse
@@ -46,6 +49,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Rate Limiter
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # データベース設定
 SQLALCHEMY_DATABASE_URL = "sqlite:///./sql_app.db"
@@ -203,7 +211,8 @@ def is_password_strong_enough(password: str) -> bool:
 
 # ユーザー登録エンドポイント
 @app.post("/register", response_model=UserInDB)
-async def register_user(user: UserCreate, db: Session = Depends(get_db)):
+async def register_user(request: Request, user: UserCreate, db: Session = Depends(get_db)):
+    await app.state.limiter(request, "10/minute")
     if not is_password_strong_enough(user.password):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -222,7 +231,8 @@ async def register_user(user: UserCreate, db: Session = Depends(get_db)):
 
 # ログインエンドポイント
 @app.post("/token", response_model=Token)
-async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+async def login_for_access_token(request: Request, form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    await app.state.limiter(request, "10/minute")
     user = db.query(User).filter(User.username == form_data.username).first()
     if not user or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(
