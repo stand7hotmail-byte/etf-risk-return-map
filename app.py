@@ -29,7 +29,23 @@ cred = credentials.Certificate("etf-webapp-firebase-adminsdk-fbsvc-96649b4b25.js
 firebase_admin.initialize_app(cred)
 
 
+from fastapi.middleware.cors import CORSMiddleware
+
 app = FastAPI()
+
+origins = [
+    "https://etf-risk-return-map-project.an.r.appspot.com",
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # データベース設定
 SQLALCHEMY_DATABASE_URL = "sqlite:///./sql_app.db"
