@@ -22,6 +22,7 @@ from jose import jwt, JWTError
 import firebase_admin
 from firebase_admin import credentials, auth
 import time
+import os
 
 # Firebase Admin SDKの初期化
 cred = credentials.Certificate("etf-webapp-firebase-adminsdk-fbsvc-96649b4b25.json")
@@ -111,7 +112,7 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 # JWT認証設定
-SECRET_KEY = "your-secret-key" # 本番環境では環境変数から取得すること
+SECRET_KEY = os.environ.get("SECRET_KEY", "a-fallback-secret-key-for-local-development-only")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
