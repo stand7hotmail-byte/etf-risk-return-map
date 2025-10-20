@@ -78,8 +78,10 @@ export function createEtfCheckboxes(etfList, definitions, container, currentlyCh
         popoverTrigger.className = 'badge bg-light text-dark rounded-pill ms-auto'; // Use ms-auto to push to the right
         popoverTrigger.style.cursor = 'pointer';
         popoverTrigger.innerHTML = '<i class="bi bi-info-lg"></i>';
+        popoverTrigger.setAttribute('tabindex', '0'); // Make it focusable
+        popoverTrigger.setAttribute('role', 'button'); // Accessibility
         popoverTrigger.setAttribute('data-bs-toggle', 'popover');
-        popoverTrigger.setAttribute('data-bs-trigger', 'click'); // Changed to click
+        popoverTrigger.setAttribute('data-bs-trigger', 'focus'); // Changed to focus
         popoverTrigger.setAttribute('data-bs-title', etfInfo.name || ticker);
         popoverTrigger.setAttribute('data-ticker', ticker); // Add ticker data attribute
         popoverTrigger.setAttribute('data-bs-content', 'Loading...'); // Default content
