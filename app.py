@@ -1001,12 +1001,14 @@ async def get_etf_details(ticker: str):
     try:
         etf = yf.Ticker(ticker)
         info = etf.info
+        
+        # Get static data from our CSV
+        etf_static_data = ETF_DEFINITIONS.get(ticker, {})
 
         # --- Basic Info ---
         basic_info = {
             "longName": info.get("longName", "N/A"),
             "fundFamily": info.get("fundFamily", "N/A"),
-            "category": info.get("category", "N/A"),
         }
 
         # --- Key Metrics ---
@@ -1018,48 +1020,44 @@ async def get_etf_details(ticker: str):
             "Beta": f'{info.get("beta", "N/A")}',
             "52wk High": info.get("fiftyTwoWeekHigh", "N/A"),
             "52wk Low": info.get("fiftyTwoWeekLow", "N/A"),
-            "Avg. Volume": format_market_cap(info.get("averageVolume")),
         }
-        
-        # --- Top Holdings ---
-        top_holdings = []
-        try:
-            holdings = etf.holdings
-            if holdings is not None and not holdings.empty:
-                holdings_df = holdings.head(10)
-                top_holdings = [
-                    {"name": row['Holding'], "weight": f'{row["% Portfolio"] * 100:.2f}%'}
-                    for _, row in holdings_df.iterrows()
-                ]
-        except Exception:
-            top_holdings = []
-
-        # --- Sector Weights ---
-        sector_weights = []
-        try:
-            sectors = etf.sector_weights
-            if sectors is not None and not sectors.empty:
-                sector_df = sectors.head(10)
-                sector_weights = [
-                    {"sector": index, "weight": f'{value * 100:.2f}%'}
-                    for index, value in sector_df.items()
-                ]
-        except Exception:
-            sector_weights = []
 
         # --- Generated Summary ---
-        summary_text = f'{basic_info["fundFamily"]}が提供する、{basic_info["category"]}に分類されるETFです。'
-        if len(sector_weights) >= 2:
-            summary_text += f' 主に{sector_weights[0]["sector"]} ({sector_weights[0]["weight"]})や{sector_weights[1]["sector"]} ({sector_weights[1]["weight"]})に重点を置いています。'
-        elif len(sector_weights) == 1:
-            summary_text += f' 主に{sector_weights[0]["sector"]} ({sector_weights[0]["weight"]})に重点を置いています。'
-        basic_info['generatedSummary'] = summary_text
+        summary_parts = []
+        fund_family = basic_info.get("fundFamily")
+        if fund_family and fund_family != 'N/A':
+            summary_parts.append(f'「{fund_family}」が提供する')
+
+        category = info.get("category")
+        asset_class = etf_static_data.get("asset_class")
+        region = etf_static_data.get("region")
+        
+        description_parts = []
+        if region and region.strip():
+            description_parts.append(f"【{region.strip()}】")
+        if asset_class and asset_class.strip():
+            description_parts.append(f"の【{asset_class.strip()}】")
+        
+        if description_parts:
+            summary_parts.append("".join(description_parts) + "に投資するETFです。")
+
+        if category and category != 'N/A':
+            summary_parts.append(f'カテゴリは「{category}」に分類されます。')
+            
+        style = etf_static_data.get("style")
+        if style and style.strip():
+            summary_parts.append(f'投資スタイルは「{style.strip()}」です。')
+
+        theme = etf_static_data.get("theme")
+        if theme and theme.strip():
+            summary_parts.append(f'「{theme.strip()}」というテーマに焦点を当てています。')
+
+        basic_info['generatedSummary'] = " ".join(summary_parts) if summary_parts else "詳細なサマリーはありません。"
+
 
         return {
             "basicInfo": basic_info,
             "keyMetrics": key_metrics,
-            "topHoldings": top_holdings,
-            "sectorWeights": sector_weights,
         }
 
     except Exception as e:

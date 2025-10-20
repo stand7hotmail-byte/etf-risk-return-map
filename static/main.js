@@ -73,40 +73,12 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             metricsHtml += '</table>';
 
-            // --- Build Top Holdings Table ---
-            let holdingsHtml = '<h6>Top 10 Holdings</h6>';
-            if (data.topHoldings && data.topHoldings.length > 0) {
-                holdingsHtml += '<table class="table table-sm table-striped table-hover">';
-                data.topHoldings.forEach(h => {
-                    holdingsHtml += `<tr><td>${h.name}</td><td class="text-end">${h.weight}</td></tr>`;
-                });
-                holdingsHtml += '</table>';
-            } else {
-                holdingsHtml += '<p class="text-muted small">No holdings data available.</p>';
-            }
-
-            // --- Build Sector Weights Table ---
-            let sectorsHtml = '<h6>Sector Weights</h6>';
-            if (data.sectorWeights && data.sectorWeights.length > 0) {
-                sectorsHtml += '<table class="table table-sm table-striped table-hover">';
-                data.sectorWeights.forEach(s => {
-                    sectorsHtml += `<tr><td>${s.sector}</td><td class="text-end">${s.weight}</td></tr>`;
-                });
-                sectorsHtml += '</table>';
-            } else {
-                sectorsHtml += '<p class="text-muted small">No sector data available.</p>';
-            }
-
             const fullHtml = `
                 <div class="etf-popover-content" style="min-width: 320px;">
                     <p class="mb-1"><strong>${data.basicInfo.longName}</strong></p>
                     <p class="text-muted small fst-italic mt-0 mb-2">${data.basicInfo.generatedSummary || ''}</p>
                     <hr class="my-2">
                     ${metricsHtml}
-                    <hr class="my-2">
-                    ${holdingsHtml}
-                    <hr class="my-2">
-                    ${sectorsHtml}
                 </div>
             `;
 
