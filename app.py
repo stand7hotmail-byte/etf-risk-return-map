@@ -338,6 +338,8 @@ async def delete_user_portfolio(portfolio_id: int, db: Session = Depends(get_db)
 def load_etf_definitions():
     try:
         df = pd.read_csv("etf_list.csv")
+        # Replace NaN values with empty strings for clean JSON conversion
+        df.fillna(' ', inplace=True)
         # Convert to the nested dictionary format, using ticker as the key
         return df.set_index('ticker').to_dict(orient='index')
     except FileNotFoundError:
@@ -981,20 +983,84 @@ async def get_correlation_matrix(request: HistoricalPerformanceRequest):
     except Exception as e:
         return {"error": f"Error calculating correlation matrix: {str(e)}"}
 
+def format_market_cap(cap):
+    if cap is None or not isinstance(cap, (int, float)):
+        return "N/A"
+    if cap >= 1_000_000_000_000:
+        return f"{cap / 1_000_000_000_000:.2f}T"
+    if cap >= 1_000_000_000:
+        return f"{cap / 1_000_000_000:.2f}B"
+    if cap >= 1_000_000:
+        return f"{cap / 1_000_000:.2f}M"
+    if cap >= 1_000:
+        return f"{cap / 1_000:.2f}K"
+    return str(cap)
+
 @app.get("/etf_details/{ticker}")
 async def get_etf_details(ticker: str):
     try:
         etf = yf.Ticker(ticker)
         info = etf.info
 
-        # Extract relevant data with fallbacks for missing keys
-        details = {
+        # --- Basic Info ---
+        basic_info = {
             "longName": info.get("longName", "N/A"),
-            "summary": info.get("longBusinessSummary", "N/A"),
-            "totalAssets": info.get("totalAssets", 0),
-            "yield": info.get("trailingAnnualDividendYield", 0),
-            "expenseRatio": info.get("annualReportExpenseRatio", 0),
+            "fundFamily": info.get("fundFamily", "N/A"),
+            "category": info.get("category", "N/A"),
         }
-        return details
+
+        # --- Key Metrics ---
+        key_metrics = {
+            "AUM": format_market_cap(info.get("totalAssets")),
+            "Yield": f'{info.get("trailingAnnualDividendYield", 0) * 100:.2f}%' if info.get("trailingAnnualDividendYield") else "N/A",
+            "Expense Ratio": f'{info.get("annualReportExpenseRatio", 0) * 100:.2f}%' if info.get("annualReportExpenseRatio") else "N/A",
+            "YTD Return": f'{info.get("ytdReturn", 0) * 100:.2f}%' if info.get("ytdReturn") else "N/A",
+            "Beta": f'{info.get("beta", "N/A")}',
+            "52wk High": info.get("fiftyTwoWeekHigh", "N/A"),
+            "52wk Low": info.get("fiftyTwoWeekLow", "N/A"),
+            "Avg. Volume": format_market_cap(info.get("averageVolume")),
+        }
+        
+        # --- Top Holdings ---
+        top_holdings = []
+        try:
+            holdings = etf.holdings
+            if holdings is not None and not holdings.empty:
+                holdings_df = holdings.head(10)
+                top_holdings = [
+                    {"name": row['Holding'], "weight": f'{row["% Portfolio"] * 100:.2f}%'}
+                    for _, row in holdings_df.iterrows()
+                ]
+        except Exception:
+            top_holdings = []
+
+        # --- Sector Weights ---
+        sector_weights = []
+        try:
+            sectors = etf.sector_weights
+            if sectors is not None and not sectors.empty:
+                sector_df = sectors.head(10)
+                sector_weights = [
+                    {"sector": index, "weight": f'{value * 100:.2f}%'}
+                    for index, value in sector_df.items()
+                ]
+        except Exception:
+            sector_weights = []
+
+        # --- Generated Summary ---
+        summary_text = f'{basic_info["fundFamily"]}が提供する、{basic_info["category"]}に分類されるETFです。'
+        if len(sector_weights) >= 2:
+            summary_text += f' 主に{sector_weights[0]["sector"]} ({sector_weights[0]["weight"]})や{sector_weights[1]["sector"]} ({sector_weights[1]["weight"]})に重点を置いています。'
+        elif len(sector_weights) == 1:
+            summary_text += f' 主に{sector_weights[0]["sector"]} ({sector_weights[0]["weight"]})に重点を置いています。'
+        basic_info['generatedSummary'] = summary_text
+
+        return {
+            "basicInfo": basic_info,
+            "keyMetrics": key_metrics,
+            "topHoldings": top_holdings,
+            "sectorWeights": sector_weights,
+        }
+
     except Exception as e:
         raise HTTPException(status_code=404, detail=f"Could not fetch details for {ticker}: {str(e)}")

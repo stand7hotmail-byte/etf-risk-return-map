@@ -1,75 +1,75 @@
-ticker,asset_class,region,name
-SPY,Stock,US,SPDR S&P 500 ETF Trust
-VOO,Stock,US,Vanguard S&P 500 ETF
-QQQ,Stock,US,Invesco QQQ Trust
-VTI,Stock,US,Vanguard Total Stock Market ETF
-VXUS,Stock,Global ex-US,Vanguard Total International Stock ETF
-BND,Bond,US,Vanguard Total Bond Market ETF
-AGG,Bond,US,iShares Core U.S. Aggregate Bond ETF
-GLD,Commodity,Global,SPDR Gold Shares
-TLT,Bond,US,iShares 20+ Year Treasury Bond ETF
-XLK,Stock,US,Technology Select Sector SPDR Fund
-XLF,Stock,US,Financial Select Sector SPDR Fund
-XLV,Stock,US,Health Care Select Sector SPDR Fund
-VNQ,Real Estate,US,Vanguard Real Estate ETF
-IEMG,Stock,Emerging,iShares Core MSCI Emerging Markets ETF
-EFA,Stock,Developed ex-US,iShares MSCI EAFE ETF
-VGT,Stock,US,Vanguard Information Technology ETF
-VCR,Stock,US,Vanguard Consumer Discretionary ETF
-VFH,Stock,US,Vanguard Financials ETF
-VHT,Stock,US,Vanguard Health Care ETF
-VIS,Stock,US,Vanguard Industrials ETF
-VAW,Stock,US,Vanguard Materials ETF
-XLC,Stock,US,Communication Services Select Sector SPDR Fund
-XLP,Stock,US,Consumer Staples Select Sector SPDR Fund
-XLE,Stock,US,Energy Select Sector SPDR Fund
-XLU,Stock,US,Utilities Select Sector SPDR Fund
-XLRE,Real Estate,US,Real Estate Select Sector SPDR Fund
-VEA,Stock,Developed ex-US,Vanguard FTSE Developed Markets ETF
-IEFA,Stock,Developed ex-US,iShares Core MSCI EAFE ETF
-SCHF,Stock,Developed ex-US,Schwab International Equity ETF
-VWO,Stock,Emerging,Vanguard FTSE Emerging Markets ETF
-BSV,Bond,US,Vanguard Short-Term Bond ETF
-SHY,Bond,US,iShares 1-3 Year Treasury Bond ETF
-VGSH,Bond,US,Vanguard Short-Term Treasury ETF
-VCIT,Bond,US,Vanguard Intermediate-Term Corporate Bond ETF
-HYG,Bond,US,iShares iBoxx $ High Yield Corporate Bond ETF
-TIP,Bond,US,iShares TIPS Bond ETF
-VTIP,Bond,US,Vanguard Short-Term Inflation-Protected Securities ETF
-PDBC,Commodity,Global,Invesco Optimum Yield Diversified Commodity Strategy No K-1 ETF
-DBA,Commodity,Global,Invesco DB Agriculture Fund
-USO,Commodity,Global,United States Oil Fund LP
-UNG,Commodity,Global,United States Natural Gas Fund LP
-MOO,Stock,Global,VanEck Agribusiness ETF
-VNQI,Real Estate,Global ex-US,Vanguard Global ex-U.S. Real Estate ETF
-RWX,Real Estate,Global ex-US,SPDR Dow Jones International Real Estate ETF
-ICLN,Stock,Global,iShares Global Clean Energy ETF
-QCLN,Stock,Global,First Trust NASDAQ Clean Edge Green Energy Index Fund
-TAN,Stock,Global,Invesco Solar ETF
-CIBR,Stock,Global,First Trust NASDAQ Cybersecurity ETF
-HACK,Stock,Global,Amplify Cybersecurity ETF
-BOTZ,Stock,Global,Global X Robotics & Artificial Intelligence ETF
-ROBO,Stock,Global,ROBO Global Robotics & Automation Index ETF
-ARKQ,Stock,Global,ARK Autonomous Technology & Robotics ETF
-IXN,Stock,Global,iShares Global Tech ETF
-IXJ,Stock,Global,iShares Global Healthcare ETF
-IXC,Stock,Global,iShares Global Energy ETF
-EWJ,Stock,Japan,iShares MSCI Japan ETF
-EWG,Stock,Germany,iShares MSCI Germany ETF
-EWU,Stock,UK,iShares MSCI United Kingdom ETF
-EWC,Stock,Canada,iShares MSCI Canada ETF
-SCHD,Stock,US,Schwab U.S. Dividend Equity ETF
-JEPI,Stock,US,JPMorgan Equity Premium Income ETF
-JEPQ,Stock,US,JPMorgan Nasdaq Equity Premium Income ETF
-SOXX,Stock,Global,iShares Semiconductor ETF
-ARKK,Stock,Global,ARK Innovation ETF
-LIT,Stock,Global,Global X Lithium & Battery Tech ETF
-INDA,Stock,India,iShares MSCI India ETF
-EWZ,Stock,Brazil,iShares MSCI Brazil ETF
-LQD,Bond,US,iShares iBoxx $ Investment Grade Corporate Bond ETF
-JNK,Bond,US,SPDR Bloomberg High Yield Bond ETF
-REM,Real Estate,US,iShares Mortgage Real Estate ETF
-SRVR,Real Estate,Global,Pacer Data & Infrastructure Real Estate ETF
-IBIT,Crypto,Global,iShares Bitcoin Trust
-FBTC,Crypto,Global,Fidelity Wise Origin Bitcoin Fund
-BITB,Crypto,Global,Bitwise Bitcoin ETF
+"ticker","asset_class","region","name","style","size","sector","theme"
+"SPY","Stock","US","SPDR S&P 500 ETF Trust","Blend","Large-Cap","",""
+"VOO","Stock","US","Vanguard S&P 500 ETF","Blend","Large-Cap","",""
+"QQQ","Stock","US","Invesco QQQ Trust","Growth","Large-Cap","Technology",""
+"VTI","Stock","US","Vanguard Total Stock Market ETF","Blend","Total-Market","",""
+"VXUS","Stock","Global ex-US","Vanguard Total International Stock ETF","Blend","Total-Market","",""
+"BND","Bond","US","Vanguard Total Bond Market ETF","","","Government/Corporate",""
+"AGG","Bond","US","iShares Core U.S. Aggregate Bond ETF","","","Government/Corporate",""
+"GLD","Commodity","Global","SPDR Gold Shares","","","","Gold"
+"TLT","Bond","US","iShares 20+ Year Treasury Bond ETF","","","Government",""
+"XLK","Stock","US","Technology Select Sector SPDR Fund","","Large-Cap","Technology",""
+"XLF","Stock","US","Financial Select Sector SPDR Fund","","Large-Cap","Financials",""
+"XLV","Stock","US","Health Care Select Sector SPDR Fund","","Large-Cap","Health Care",""
+"VNQ","Real Estate","US","Vanguard Real Estate ETF","","","","US Real Estate"
+"IEMG","Stock","Emerging","iShares Core MSCI Emerging Markets ETF","Blend","Total-Market","",""
+"EFA","Stock","Developed ex-US","iShares MSCI EAFE ETF","Blend","Large-Cap","",""
+"VGT","Stock","US","Vanguard Information Technology ETF","Growth","Total-Market","Technology",""
+"VCR","Stock","US","Vanguard Consumer Discretionary ETF","","Total-Market","Consumer Discretionary",""
+"VFH","Stock","US","Vanguard Financials ETF","","Total-Market","Financials",""
+"VHT","Stock","US","Vanguard Health Care ETF","","Total-Market","Health Care",""
+"VIS","Stock","US","Vanguard Industrials ETF","","Total-Market","Industrials",""
+"VAW","Stock","US","Vanguard Materials ETF","","Total-Market","Materials",""
+"XLC","Stock","US","Communication Services Select Sector SPDR Fund","","Large-Cap","Communication Services",""
+"XLP","Stock","US","Consumer Staples Select Sector SPDR Fund","","Large-Cap","Consumer Staples",""
+"XLE","Stock","US","Energy Select Sector SPDR Fund","","Large-Cap","Energy",""
+"XLU","Stock","US","Utilities Select Sector SPDR Fund","","Large-Cap","Utilities",""
+"XLRE","Real Estate","US","Real Estate Select Sector SPDR Fund","","Large-Cap","Real Estate","US Real Estate"
+"VEA","Stock","Developed ex-US","Vanguard FTSE Developed Markets ETF","Blend","Large-Cap","",""
+"IEFA","Stock","Developed ex-US","iShares Core MSCI EAFE ETF","Blend","Large-Cap","",""
+"SCHF","Stock","Developed ex-US","Schwab International Equity ETF","Blend","Large-Cap","",""
+"VWO","Stock","Emerging","Vanguard FTSE Emerging Markets ETF","Blend","Total-Market","",""
+"BSV","Bond","US","Vanguard Short-Term Bond ETF","","","Government/Corporate",""
+"SHY","Bond","US","iShares 1-3 Year Treasury Bond ETF","","","Government",""
+"VGSH","Bond","US","Vanguard Short-Term Treasury ETF","","","Government",""
+"VCIT","Bond","US","Vanguard Intermediate-Term Corporate Bond ETF","","","Corporate",""
+"HYG","Bond","US","iShares iBoxx $ High Yield Corporate Bond ETF","High-Yield","","Corporate",""
+"TIP","Bond","US","iShares TIPS Bond ETF","","","Government",""
+"VTIP","Bond","US","Vanguard Short-Term Inflation-Protected Securities ETF","","","Government",""
+"PDBC","Commodity","Global","Invesco Optimum Yield Diversified Commodity Strategy No K-1 ETF","","","","Diversified"
+"DBA","Commodity","Global","Invesco DB Agriculture Fund","","","","Agriculture"
+"USO","Commodity","Global","United States Oil Fund LP","","","","Oil"
+"UNG","Commodity","Global","United States Natural Gas Fund LP","","","","Natural Gas"
+"MOO","Stock","Global","VanEck Agribusiness ETF","","","Consumer Staples","Agribusiness"
+"VNQI","Real Estate","Global ex-US","Vanguard Global ex-U.S. Real Estate ETF","","","","Global Real Estate"
+"RWX","Real Estate","Global ex-US","SPDR Dow Jones International Real Estate ETF","","","","Global Real Estate"
+"ICLN","Stock","Global","iShares Global Clean Energy ETF","Growth","","","Clean Energy"
+"QCLN","Stock","Global","First Trust NASDAQ Clean Edge Green Energy Index Fund","Growth","","","Clean Energy"
+"TAN","Stock","Global","Invesco Solar ETF","Growth","","","Solar Energy"
+"CIBR","Stock","Global","First Trust NASDAQ Cybersecurity ETF","Growth","","Technology","Cybersecurity"
+"HACK","Stock","Global","Amplify Cybersecurity ETF","Growth","","Technology","Cybersecurity"
+"BOTZ","Stock","Global","Global X Robotics & Artificial Intelligence ETF","Growth","","Technology","AI & Robotics"
+"ROBO","Stock","Global","ROBO Global Robotics & Automation Index ETF","Growth","","Technology","AI & Robotics"
+"ARKQ","Stock","Global","ARK Autonomous Technology & Robotics ETF","Growth","","Technology","Autonomous Tech"
+"IXN","Stock","Global","iShares Global Tech ETF","Growth","Large-Cap","Technology",""
+"IXJ","Stock","Global","iShares Global Healthcare ETF","","Large-Cap","Health Care",""
+"IXC","Stock","Global","iShares Global Energy ETF","","Large-Cap","Energy",""
+"EWJ","Stock","Japan","iShares MSCI Japan ETF","Blend","Large-Cap","",""
+"EWG","Stock","Germany","iShares MSCI Germany ETF","Blend","Large-Cap","",""
+"EWU","Stock","UK","iShares MSCI United Kingdom ETF","Blend","Large-Cap","",""
+"EWC","Stock","Canada","iShares MSCI Canada ETF","Blend","Large-Cap","",""
+"SCHD","Stock","US","Schwab U.S. Dividend Equity ETF","High Dividend","Large-Cap","",""
+"JEPI","Stock","US","JPMorgan Equity Premium Income ETF","High Dividend","Large-Cap","",""
+"JEPQ","Stock","US","JPMorgan Nasdaq Equity Premium Income ETF","High Dividend","Large-Cap","Technology",""
+"SOXX","Stock","Global","iShares Semiconductor ETF","Growth","Total-Market","Technology","Semiconductors"
+"ARKK","Stock","Global","ARK Innovation ETF","Growth","Multi-Cap","","Disruptive Innovation"
+"LIT","Stock","Global","Global X Lithium & Battery Tech ETF","Growth","","Materials","Lithium & Battery"
+"INDA","Stock","India","iShares MSCI India ETF","Blend","Large-Cap","",""
+"EWZ","Stock","Brazil","iShares MSCI Brazil ETF","Blend","Large-Cap","",""
+"LQD","Bond","US","iShares iBoxx $ Investment Grade Corporate Bond ETF","","","Corporate",""
+"JNK","Bond","US","SPDR Bloomberg High Yield Bond ETF","High-Yield","","Corporate",""
+"REM","Real Estate","US","iShares Mortgage Real Estate ETF","","","","Mortgage REITs"
+"SRVR","Real Estate","Global","Pacer Data & Infrastructure Real Estate ETF","","","","Data & Infrastructure"
+"IBIT","Crypto","Global","iShares Bitcoin Trust","","","","Bitcoin"
+"FBTC","Crypto","Global","Fidelity Wise Origin Bitcoin Fund","","","","Bitcoin"
+"BITB","Crypto","Global","Bitwise Bitcoin ETF","","","","Bitcoin"

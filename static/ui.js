@@ -4,6 +4,10 @@
 export const etfCheckboxesDiv = document.getElementById('etf-checkboxes');
 export const assetClassFilter = document.getElementById('asset-class-filter');
 export const regionFilter = document.getElementById('region-filter');
+export const styleFilter = document.getElementById('style-filter');
+export const sizeFilter = document.getElementById('size-filter');
+export const sectorFilter = document.getElementById('sector-filter');
+export const themeFilter = document.getElementById('theme-filter');
 export const selectAllBtn = document.getElementById('select-all-btn');
 export const deselectAllBtn = document.getElementById('deselect-all-btn');
 
@@ -210,4 +214,18 @@ export function drawCorrelationHeatmap(data, containerId) {
     };
 
     Plotly.newPlot(containerId, [trace], layout);
+}
+
+export function populateFilterOptions(selectElement, options) {
+    const selectedValue = selectElement.value;
+    while (selectElement.options.length > 1) {
+        selectElement.remove(1);
+    }
+    options.forEach(optionValue => {
+        const option = document.createElement('option');
+        option.value = optionValue;
+        option.textContent = optionValue;
+        selectElement.appendChild(option);
+    });
+    selectElement.value = selectedValue;
 }

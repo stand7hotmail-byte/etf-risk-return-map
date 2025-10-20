@@ -17,6 +17,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // --- Event Listeners ---
     ui.assetClassFilter.addEventListener('change', () => filterAndDisplayEtfs());
     ui.regionFilter.addEventListener('change', () => filterAndDisplayEtfs());
+    ui.styleFilter.addEventListener('change', () => filterAndDisplayEtfs());
+    ui.sizeFilter.addEventListener('change', () => filterAndDisplayEtfs());
+    ui.sectorFilter.addEventListener('change', () => filterAndDisplayEtfs());
+    ui.themeFilter.addEventListener('change', () => filterAndDisplayEtfs());
     etfSearchInput.addEventListener('input', () => filterAndDisplayEtfs());
 
     ui.selectAllBtn.addEventListener('click', () => {
@@ -54,28 +58,71 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (!ticker) return;
 
-        // Check cache first
         if (etfDetailCache[ticker]) {
             popover.setContent({ '.popover-body': etfDetailCache[ticker] });
             return;
         }
 
-        // Fetch data, update popover, and cache it
         try {
-            const details = await api.getEtfDetails(ticker);
-            const contentHtml = `
-                <p><strong>Total Assets:</strong> ${(details.totalAssets || 0).toLocaleString()}</p>
-                <p><strong>Yield:</strong> ${details.yield ? (details.yield * 100).toFixed(2) + '%' : 'N/A'}</p>
-                <p><strong>Expense Ratio:</strong> ${details.expenseRatio ? (details.expenseRatio * 100).toFixed(2) + '%' : 'N/A'}</p>
-                <hr>
-                <p class="text-muted small">${details.summary || 'No summary available.'}</p>
+            const data = await api.getEtfDetails(ticker);
+
+            // --- Build Key Metrics Table ---
+            let metricsHtml = '<table class="table table-sm table-borderless mb-2">';
+            for (const [key, value] of Object.entries(data.keyMetrics)) {
+                metricsHtml += `<tr><td class="fw-bold">${key}</td><td class="text-end">${value}</td></tr>`;
+            }
+            metricsHtml += '</table>';
+
+            // --- Build Top Holdings Table ---
+            let holdingsHtml = '<h6>Top 10 Holdings</h6>';
+            if (data.topHoldings && data.topHoldings.length > 0) {
+                holdingsHtml += '<table class="table table-sm table-striped table-hover">';
+                data.topHoldings.forEach(h => {
+                    holdingsHtml += `<tr><td>${h.name}</td><td class="text-end">${h.weight}</td></tr>`;
+                });
+                holdingsHtml += '</table>';
+            } else {
+                holdingsHtml += '<p class="text-muted small">No holdings data available.</p>';
+            }
+
+            // --- Build Sector Weights Table ---
+            let sectorsHtml = '<h6>Sector Weights</h6>';
+            if (data.sectorWeights && data.sectorWeights.length > 0) {
+                sectorsHtml += '<table class="table table-sm table-striped table-hover">';
+                data.sectorWeights.forEach(s => {
+                    sectorsHtml += `<tr><td>${s.sector}</td><td class="text-end">${s.weight}</td></tr>`;
+                });
+                sectorsHtml += '</table>';
+            } else {
+                sectorsHtml += '<p class="text-muted small">No sector data available.</p>';
+            }
+
+            const fullHtml = `
+                <div class="etf-popover-content" style="min-width: 320px;">
+                    <p class="mb-1"><strong>${data.basicInfo.longName}</strong></p>
+                    <p class="text-muted small fst-italic mt-0 mb-2">${data.basicInfo.generatedSummary || ''}</p>
+                    <hr class="my-2">
+                    ${metricsHtml}
+                    <hr class="my-2">
+                    ${holdingsHtml}
+                    <hr class="my-2">
+                    ${sectorsHtml}
+                </div>
             `;
-            etfDetailCache[ticker] = contentHtml;
-            popover.setContent({ '.popover-body': contentHtml });
+
+            etfDetailCache[ticker] = fullHtml;
+            const popoverInstance = bootstrap.Popover.getInstance(triggerElement);
+            if (popoverInstance) {
+                popoverInstance.setContent({ '.popover-body': fullHtml });
+            }
+
         } catch (error) {
-            const errorHtml = `<p class="text-danger">${error.message}</p>`;
-            etfDetailCache[ticker] = errorHtml; // Cache the error state too
-            popover.setContent({ '.popover-body': errorHtml });
+            const errorHtml = `<p class="text-danger">Could not load details. The data may not be available for this ticker.</p>`;
+            etfDetailCache[ticker] = errorHtml;
+            const popoverInstance = bootstrap.Popover.getInstance(triggerElement);
+            if (popoverInstance) {
+                popoverInstance.setContent({ '.popover-body': errorHtml });
+            }
         }
     });
 
@@ -84,16 +131,27 @@ document.addEventListener('DOMContentLoaded', function() {
     function getCurrentlyFilteredTickers() {
         const assetClass = ui.assetClassFilter.value;
         const region = ui.regionFilter.value;
+        const style = ui.styleFilter.value;
+        const size = ui.sizeFilter.value;
+        const sector = ui.sectorFilter.value;
+        const theme = ui.themeFilter.value;
         const searchTerm = etfSearchInput.value.normalize('NFKC').toLowerCase();
 
         return Object.keys(etfDefinitions).filter(ticker => {
             const etf = etfDefinitions[ticker];
             if (!etf) return false;
 
-            const assetMatch = assetClass === 'all' || etf.asset_class === assetClass;
-            const regionMatch = region === 'all' || etf.region === region;
-            const searchMatch = searchTerm === '' || ticker.toLowerCase().includes(searchTerm);
-            return assetMatch && regionMatch && searchMatch;
+            // A match is true if the filter is 'all' OR the ETF's property is empty/whitespace OR it matches the filter value.
+            const assetMatch = assetClass === 'all' || !etf.asset_class?.trim() || etf.asset_class === assetClass;
+            const regionMatch = region === 'all' || !etf.region?.trim() || etf.region === region;
+            const styleMatch = style === 'all' || !etf.style?.trim() || etf.style === style;
+            const sizeMatch = size === 'all' || !etf.size?.trim() || etf.size === size;
+            const sectorMatch = sector === 'all' || !etf.sector?.trim() || etf.sector === sector;
+            const themeMatch = theme === 'all' || !etf.theme?.trim() || etf.theme === theme;
+            
+            const searchMatch = searchTerm === '' || ticker.toLowerCase().includes(searchTerm) || etf.name.toLowerCase().includes(searchTerm);
+
+            return assetMatch && regionMatch && styleMatch && sizeMatch && sectorMatch && themeMatch && searchMatch;
         });
     }
 
@@ -528,9 +586,23 @@ document.addEventListener('DOMContentLoaded', function() {
     async function initializeApp() {
         try {
             etfDefinitions = await api.getEtfList();
-            masterCheckedState = new Set(Object.keys(etfDefinitions)); // Initialize master state
-            filterAndDisplayEtfs(); // Initial display based on default filters
-            // generateMap(); // Optional: decide if you want to auto-generate map on load
+            masterCheckedState = new Set(Object.keys(etfDefinitions));
+
+            // --- Populate Filters ---
+            const getUniqueValues = (prop) => {
+                const allValues = Object.values(etfDefinitions).map(etf => etf[prop]).filter(val => val && val.trim() !== '');
+                return [...new Set(allValues)].sort();
+            };
+
+            ui.populateFilterOptions(ui.styleFilter, getUniqueValues('style'));
+            ui.populateFilterOptions(ui.sizeFilter, getUniqueValues('size'));
+            ui.populateFilterOptions(ui.sectorFilter, getUniqueValues('sector'));
+            ui.populateFilterOptions(ui.themeFilter, getUniqueValues('theme'));
+            // Also repopulate existing filters to be fully dynamic
+            ui.populateFilterOptions(ui.assetClassFilter, getUniqueValues('asset_class'));
+            ui.populateFilterOptions(ui.regionFilter, getUniqueValues('region'));
+
+            filterAndDisplayEtfs(); // Initial display
         } catch (error) {
             console.error('Initialization failed:', error);
             alert('Could not initialize the application. Please check the console for errors.');
