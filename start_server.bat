@@ -1,4 +1,4 @@
 @echo off
 echo Starting FastAPI server...
 cd /d "%~dp0"
-python -m uvicorn app:app --reload
+python -m uvicorn main:app --reload

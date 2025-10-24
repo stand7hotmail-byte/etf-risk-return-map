@@ -102,11 +102,14 @@ export async function getMapData(tickers, period) {
     tickers.forEach(ticker => queryParams.append('tickers', ticker));
     queryParams.append('period', period);
 
-    const [etfData, frontierData] = await Promise.all([
-        fetch(`/data?${queryParams.toString()}`).then(res => res.json()),
-        fetch(`/efficient_frontier?${queryParams.toString()}`).then(res => res.json())
-    ]);
-    return { etfData, frontierData };
+    // Now only call efficient_frontier, which will return both etf_data and frontier_points
+    const response = await fetch(`/efficient_frontier?${queryParams.toString()}`);
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'An API error occurred while fetching map data');
+    }
+    const data = await response.json();
+    return { etfData: data.etf_data, frontierData: { frontier_points: data.frontier_points, tangency_portfolio: data.tangency_portfolio, tangency_portfolio_weights: data.tangency_portfolio_weights } };
 }
 
 export async function getCustomPortfolioData(tickers, weights, period) {

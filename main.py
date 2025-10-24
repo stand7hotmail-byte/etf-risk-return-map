@@ -44,6 +44,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+import csv # Add this import
+
 # In-memory cache for ETF details
 etf_details_cache = {}
 CACHE_TTL = timedelta(hours=1)
@@ -57,6 +59,44 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
+from fastapi.responses import HTMLResponse
+from fastapi.requests import Request
+
+@app.get("/", response_class=HTMLResponse)
+async def read_root(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
+
+
+# --- Load ETF Definitions from CSV ---
+ETF_DEFINITIONS = {}
+try:
+    with open('etf_list.csv', 'r', encoding='utf-8') as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            ticker = row['ticker']
+            ETF_DEFINITIONS[ticker] = {
+                'asset_class': row['asset_class'],
+                'region': row['region'],
+                'name': row['name'],
+                'style': row['style'],
+                'size': row['size'],
+                'sector': row['sector'],
+                'theme': row['theme'],
+            }
+except FileNotFoundError:
+    print("etf_list.csv not found. ETF definitions will be empty.")
+except Exception as e:
+    print(f"Error loading etf_list.csv: {e}")
+
+ALL_ETF_TICKERS = list(ETF_DEFINITIONS.keys()) # Update this to use keys from ETF_DEFINITIONS
+
+@app.get("/etf_list")
+async def get_etf_list():
+    return ETF_DEFINITIONS # Return the dictionary
+
+@app.get("/risk_free_rate")
+async def get_risk_free_rate():
+    return {"risk_free_rate": RISK_FREE_RATE}
 
 # ... (existing code) ...
 
@@ -149,8 +189,6 @@ def _fetch_and_prepare_data(tickers: list[str], period: str, db: Session) -> pd.
 
     return data
 
-ALL_ETF_TICKERS = ["SPY", "VOO", "QQQ", "VTI", "VXUS", "BND", "AGG", "GLD", "TLT", "XLK", "XLF", "XLV", "VNQ", "IEMG", "EFA", "VGT", "VCR", "VFH", "VHT", "VIS", "VAW", "XLC", "XLP", "XLE", "XLU", "XLRE", "VEA", "IEFA", "SCHF", "VWO", "BSV", "SHY", "VGSH", "VCIT", "HYG", "TIP", "VTIP", "PDBC", "DBA", "USO", "UNG", "MOO", "VNQI", "RWX", "ICLN", "QCLN", "TAN", "CIBR", "HACK", "BOTZ", "ROBO", "ARKQ", "IXN", "IXJ", "IXC", "EWJ", "EWG", "EWU", "EWC", "SCHD", "JEPI", "JEPQ", "SOXX", "ARKK", "LIT", "INDA", "EWZ", "LQD", "JNK", "REM", "SRVR", "IBIT", "FBTC", "BITB"]
-
 @app.get("/efficient_frontier")
 async def get_efficient_frontier(
     tickers: list[str] = Query(ALL_ETF_TICKERS),
@@ -193,11 +231,21 @@ async def get_efficient_frontier(
 
     filtered_frontier = _filter_efficient_frontier(efficient_frontier_points)
 
+    # Calculate individual ETF risk and return
+    etf_data = []
+    for ticker in final_tickers:
+        # Calculate individual ETF's annual return and volatility
+        etf_returns = data[ticker].pct_change().dropna()
+        etf_annual_return = etf_returns.mean() * 252
+        etf_annual_volatility = etf_returns.std() * np.sqrt(252)
+        etf_data.append({"Ticker": ticker, "Risk": etf_annual_volatility, "Return": etf_annual_return})
+
     print(
         f"--- /efficient_frontier endpoint took "\
         f"{(time.time() - start_time) * 1000:.2f} ms ---"
     )
     return {
+        "etf_data": etf_data,
         "frontier_points": filtered_frontier,
         "tangency_portfolio": tangency_portfolio,
         "tangency_portfolio_weights": tangency_portfolio_weights,
