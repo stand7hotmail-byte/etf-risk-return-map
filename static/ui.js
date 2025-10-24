@@ -1,3 +1,5 @@
+import { getCurrentTheme } from './theme.js';
+
 // Handles all UI updates and DOM manipulation not related to auth
 
 // --- DOM Element Exports ---
@@ -183,6 +185,8 @@ export function displayPortfolioComposition(weights) {
 }
 
 export function drawMap(traces, layout) {
+    const currentTheme = getCurrentTheme();
+    layout.template = currentTheme === 'dark' ? 'plotly_dark' : 'plotly';
     Plotly.newPlot('graph', traces, layout);
 }
 
@@ -209,10 +213,12 @@ export function drawCorrelationHeatmap(data, containerId) {
         zmax: 1
     };
 
+    const currentTheme = getCurrentTheme(); // Get current theme
     const layout = {
         title: 'Correlation Matrix',
         xaxis: { automargin: true },
-        yaxis: { automargin: true }
+        yaxis: { automargin: true },
+        template: currentTheme === 'dark' ? 'plotly_dark' : 'plotly' // Apply theme
     };
 
     Plotly.newPlot(containerId, [trace], layout);

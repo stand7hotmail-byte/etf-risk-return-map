@@ -1,6 +1,7 @@
 import * as api from './api.js';
 import * as ui from './ui.js';
 import { initAuth } from './auth.js';
+import { getCurrentTheme } from './theme.js';
 
 document.addEventListener('DOMContentLoaded', function() {
 
@@ -22,6 +23,27 @@ document.addEventListener('DOMContentLoaded', function() {
     ui.sectorFilter.addEventListener('change', () => filterAndDisplayEtfs());
     ui.themeFilter.addEventListener('change', () => filterAndDisplayEtfs());
     etfSearchInput.addEventListener('input', () => filterAndDisplayEtfs());
+
+    // Theme toggler event listener
+    document.getElementById('theme-toggler').addEventListener('click', () => {
+        const currentTheme = getCurrentTheme();
+        const newTemplate = currentTheme === 'dark' ? 'plotly_dark' : 'plotly';
+
+        // Update layout for all potentially visible graphs
+        const graphDivs = [
+            document.getElementById('graph'),
+            document.getElementById('historical-performance-graph'),
+            document.getElementById('monte-carlo-graph'),
+            document.getElementById('dca-simulation-graph'),
+            document.getElementById('correlation-matrix-graph'),
+        ];
+
+        graphDivs.forEach(div => {
+            if (div && div.data) { // Check if graph exists and has data
+                Plotly.relayout(div, { template: newTemplate });
+            }
+        });
+    });
 
     ui.selectAllBtn.addEventListener('click', () => {
         const visibleTickers = getCurrentlyFilteredTickers();
@@ -414,7 +436,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     name: ticker
                 });
             }
-            const layout = { title: 'Cumulative Historical Performance', xaxis: { title: 'Date' }, yaxis: { title: 'Cumulative Return' } };
+            const layout = {
+                title: 'Cumulative Historical Performance',
+                xaxis: { title: 'Date' },
+                yaxis: { title: 'Cumulative Return' },
+                template: getCurrentTheme() === 'dark' ? 'plotly_dark' : 'plotly'
+            };
             Plotly.newPlot(ui.historicalPerformanceGraphDiv, traces, layout);
         } catch (error) {
             ui.historicalPerformanceGraphDiv.innerHTML = `<p style="color: red;">${error.message}</p>`;
@@ -431,7 +458,11 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             const results = await api.runMonteCarlo(selectedTickers, period, numSimulations, simulationDays);
             const trace = { x: results.final_returns.map(r => r * 100), type: 'histogram' };
-            const layout = { title: 'Monte Carlo: Distribution of Final Returns', xaxis: { title: 'Final Return (%)' } };
+            const layout = {
+                title: 'Monte Carlo: Distribution of Final Returns',
+                xaxis: { title: 'Final Return (%)' },
+                template: getCurrentTheme() === 'dark' ? 'plotly_dark' : 'plotly'
+            };
             Plotly.newPlot(ui.monteCarloGraphDiv, [trace], layout);
             ui.monteCarloResultsDiv.innerHTML = `<h3>Simulation Results</h3>
                 <p><strong>VaR (95%):</strong> ${(results.var_95 * 100).toFixed(2)}%</p>
@@ -525,10 +556,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             ];
 
-            const layout = { 
+            const layout = {
                 title: 'Future DCA Simulation',
-                xaxis: { title: 'Years' }, 
-                yaxis: { title: 'Portfolio Value' }
+                xaxis: { title: 'Years' },
+                yaxis: { title: 'Portfolio Value' },
+                template: getCurrentTheme() === 'dark' ? 'plotly_dark' : 'plotly'
             };
             Plotly.newPlot(ui.dcaSimulationGraphDiv, traces, layout);
 

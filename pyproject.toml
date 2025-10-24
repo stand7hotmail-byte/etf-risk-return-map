@@ -1,0 +1,31 @@
+[tool.black]
+line-length = 88
+target-version = ['py313']
+
+[tool.ruff]
+line-length = 88
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # Pyflakes
+    "I",  # isort
+    "C",  # flake8-comprehensions
+    "B",  # flake8-bugbear
+    "Q",  # flake8-quotes
+    "ANN", # flake8-annotations
+    "ASYNC", # flake8-async
+    "N", # pep8-naming
+    "UP", # pyupgrade
+    "A", # flake8-builtins
+    "TID", # flake8-tidy-imports
+    "D", # pydocstyle (optional, can be noisy)
+]
+ignore = [
+    "ANN101", # Missing type annotation for self in method
+    "ANN102", # Missing type annotation for cls in classmethod
+    "D100", # Missing docstring in public module
+    "D104", # Missing docstring in public package
+    "D105", # Missing docstring in magic method
+    "D107",
+    "B008", # Ignore B008 for FastAPI Depends usage
+]

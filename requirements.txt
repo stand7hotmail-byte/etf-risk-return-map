@@ -6,8 +6,12 @@ numpy
 scipy
 Jinja2
 firebase-admin
+google-cloud-secret-manager
 SQLAlchemy
 passlib[bcrypt]
 python-jose[cryptography]
 python-multipart
 slowapi
+black
+ruff
+pytest
