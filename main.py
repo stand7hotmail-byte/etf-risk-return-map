@@ -1,3 +1,4 @@
+import csv
 import time
 from datetime import datetime, timedelta
 from typing import Any
@@ -7,9 +8,10 @@ import pandas as pd
 import yfinance as yf
 from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.requests import Request
+from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from pydantic import BaseModel
 from scipy.optimize import minimize
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
@@ -18,15 +20,14 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.schemas import (
-    CustomPortfolioRequest,
-    TargetOptimizationRequest,
-    HistoricalPerformanceRequest,
-    MonteCarloSimulationRequest,
     CSVAnalysisRequest,
+    CustomPortfolioRequest,
     DcaSimulationRequest,
     FutureDcaSimulationRequest,
+    HistoricalPerformanceRequest,
+    MonteCarloSimulationRequest,
+    TargetOptimizationRequest,
 )
-
 
 app = FastAPI()
 
@@ -44,8 +45,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-import csv # Add this import
-
 # In-memory cache for ETF details
 etf_details_cache = {}
 CACHE_TTL = timedelta(hours=1)
@@ -59,9 +58,6 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-from fastapi.responses import HTMLResponse
-from fastapi.requests import Request
-
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
@@ -70,29 +66,29 @@ async def read_root(request: Request):
 # --- Load ETF Definitions from CSV ---
 ETF_DEFINITIONS = {}
 try:
-    with open('etf_list.csv', 'r', encoding='utf-8') as f:
+    with open("etf_list.csv", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         for row in reader:
-            ticker = row['ticker']
+            ticker = row["ticker"]
             ETF_DEFINITIONS[ticker] = {
-                'asset_class': row['asset_class'],
-                'region': row['region'],
-                'name': row['name'],
-                'style': row['style'],
-                'size': row['size'],
-                'sector': row['sector'],
-                'theme': row['theme'],
+                "asset_class": row["asset_class"],
+                "region": row["region"],
+                "name": row["name"],
+                "style": row["style"],
+                "size": row["size"],
+                "sector": row["sector"],
+                "theme": row["theme"],
             }
 except FileNotFoundError:
     print("etf_list.csv not found. ETF definitions will be empty.")
 except Exception as e:
     print(f"Error loading etf_list.csv: {e}")
 
-ALL_ETF_TICKERS = list(ETF_DEFINITIONS.keys()) # Update this to use keys from ETF_DEFINITIONS
+ALL_ETF_TICKERS = list(ETF_DEFINITIONS.keys())
 
 @app.get("/etf_list")
 async def get_etf_list():
-    return ETF_DEFINITIONS # Return the dictionary
+    return ETF_DEFINITIONS
 
 @app.get("/risk_free_rate")
 async def get_risk_free_rate():
@@ -103,7 +99,8 @@ async def get_risk_free_rate():
 def _calculate_portfolio_metrics(
     data: pd.DataFrame, final_tickers: list[str]
 ) -> tuple[pd.Series, pd.DataFrame]:
-    """Calculates annual returns and covariance matrix for a given DataFrame of stock prices.
+    """Calculates annual returns and covariance matrix for a given
+    DataFrame of stock prices.
 
     Args:
         data: A pandas DataFrame containing historical close prices.
@@ -128,7 +125,8 @@ def _filter_efficient_frontier(
     """Filters the efficient frontier points to create a smooth, non-decreasing curve.
 
     Args:
-        efficient_frontier_points: A list of dictionaries, each representing a point on the efficient frontier.
+        efficient_frontier_points: A list of dictionaries, each representing
+            a point on the efficient frontier.
 
     Returns:
         A filtered list of efficient frontier points.
@@ -160,15 +158,18 @@ def _filter_efficient_frontier(
 
 RISK_FREE_RATE = 0.02
 
-def _fetch_and_prepare_data(tickers: list[str], period: str, db: Session) -> pd.DataFrame:
-    """
-    Fetches historical stock data using yfinance.
+def _fetch_and_prepare_data(
+    tickers: list[str], period: str, db: Session
+) -> pd.DataFrame:
+    """Fetches historical stock data using yfinance.
     (Database caching logic can be added here later)
     """
     data = yf.download(tickers, period=period, group_by="ticker")
     if data.empty:
-        raise HTTPException(status_code=404, detail="Could not download data for the given tickers.")
-    
+        raise HTTPException(
+            status_code=404, detail="Could not download data for the given tickers."
+        )
+
     # Handle single vs multi-ticker download
     if len(tickers) > 1:
         # For multi-ticker, data has multi-level columns, e.g., ('VTI', 'Close')
@@ -179,13 +180,15 @@ def _fetch_and_prepare_data(tickers: list[str], period: str, db: Session) -> pd.
         data.columns = tickers # Rename 'Close' to the ticker name
 
     # Drop tickers with all NaN values (e.g., for a ticker that doesn't exist)
-    data = data.dropna(axis=1, how='all')
-    
+    data = data.dropna(axis=1, how="all")
+
     # Forward-fill and back-fill any remaining NaNs
     data = data.ffill().bfill()
 
     if data.empty:
-        raise HTTPException(status_code=404, detail="No valid data remaining after cleaning.")
+        raise HTTPException(
+            status_code=404, detail="No valid data remaining after cleaning."
+        )
 
     return data
 
@@ -224,7 +227,9 @@ async def get_efficient_frontier(
     num_assets = len(final_tickers)
 
     efficient_frontier_points, tangency_portfolio, tangency_portfolio_weights = \
-        _run_optimization_loop(num_assets, avg_returns, cov_matrix, final_tickers, RISK_FREE_RATE)
+        _run_optimization_loop(
+            num_assets, avg_returns, cov_matrix, final_tickers, RISK_FREE_RATE
+        )
 
     if not efficient_frontier_points:
         return {"error": "No efficient frontier points could be generated."}
@@ -238,7 +243,11 @@ async def get_efficient_frontier(
         etf_returns = data[ticker].pct_change().dropna()
         etf_annual_return = etf_returns.mean() * 252
         etf_annual_volatility = etf_returns.std() * np.sqrt(252)
-        etf_data.append({"Ticker": ticker, "Risk": etf_annual_volatility, "Return": etf_annual_return})
+        etf_data.append({
+            "Ticker": ticker,
+            "Risk": etf_annual_volatility,
+            "Return": etf_annual_return
+        })
 
     print(
         f"--- /efficient_frontier endpoint took "\
@@ -265,7 +274,10 @@ def portfolio_return(weights: np.ndarray, avg_returns: pd.Series) -> float:
 
 # シャープ・レシオを計算する関数
 def portfolio_sharpe_ratio(
-    weights: np.ndarray, avg_returns: pd.Series, cov_matrix: pd.DataFrame, risk_free_rate: float
+    weights: np.ndarray,
+    avg_returns: pd.Series,
+    cov_matrix: pd.DataFrame,
+    risk_free_rate: float,
 ) -> float:
     p_return = portfolio_return(weights, avg_returns)
     p_volatility = portfolio_volatility(weights, cov_matrix)
@@ -307,7 +319,8 @@ def _run_optimization_loop(
     final_tickers: list[str],
     risk_free_rate: float,
 ) -> tuple[list[dict[str, float]], dict[str, Any] | None, dict[str, float]]:
-    """Runs the optimization loop to calculate efficient frontier points and the tangency portfolio.
+    """Runs the optimization loop to calculate efficient frontier points
+    and the tangency portfolio.
 
     Args:
         num_assets: The number of assets in the portfolio.
@@ -318,9 +331,12 @@ def _run_optimization_loop(
 
     Returns:
         A tuple containing:
-            - efficient_frontier_points: A list of dictionaries, each representing a point on the efficient frontier.
-            - tangency_portfolio: A dictionary representing the tangency portfolio (or None if not found).
-            - tangency_portfolio_weights: A dictionary of weights for the tangency portfolio.
+            - efficient_frontier_points: A list of dictionaries, each
+              representing a point on the efficient frontier.
+            - tangency_portfolio: A dictionary representing the tangency
+              portfolio (or None if not found).
+            - tangency_portfolio_weights: A dictionary of weights for the
+              tangency portfolio.
 
     """
     constraints_list = ({"type": "eq", "fun": lambda x: np.sum(x) - 1},)

@@ -1,8 +1,9 @@
 
-import pandas as pd
-import numpy as np
-from fastapi.testclient import TestClient
 from unittest import mock
+
+import numpy as np
+import pandas as pd
+from fastapi.testclient import TestClient
 
 # Mock google.cloud.secretmanager before app is imported
 with mock.patch(
@@ -11,21 +12,21 @@ with mock.patch(
     (
         MockSecretManagerServiceClient.return_value.access_secret_version.return_value.payload.data.decode.return_value
     ) = "dummy_secret_key"
-    from main import app 
+    from main import app
 
 client = TestClient(app)
 
-@mock.patch('yfinance.download')
+@mock.patch("yfinance.download")
 def test_get_efficient_frontier(mock_yf_download):
     """Tests the /efficient_frontier endpoint."""
     # 1. Create mock data that yfinance.download would return
     mock_data = {
-        ('VTI', 'Close'): [150.0, 151.0, 150.5],
-        ('AGG', 'Close'): [110.0, 110.2, 110.1]
+        ("VTI", "Close"): [150.0, 151.0, 150.5],
+        ("AGG", "Close"): [110.0, 110.2, 110.1]
     }
     mock_df = pd.DataFrame(mock_data)
-    mock_df.index = pd.to_datetime(['2023-01-01', '2023-01-02', '2023-01-03'])
-    mock_df.columns.names = ['Ticker', 'Price'] # Name the levels
+    mock_df.index = pd.to_datetime(["2023-01-01", "2023-01-02", "2023-01-03"])
+    mock_df.columns.names = ["Ticker", "Price"] # Name the levels
     mock_yf_download.return_value = mock_df
     # 2. Call the API endpoint
     response = client.get("/efficient_frontier?tickers=VTI&tickers=AGG&period=1y")
@@ -39,7 +40,8 @@ def test_get_efficient_frontier(mock_yf_download):
     assert "tangency_portfolio_weights" in data
 
     assert isinstance(data["frontier_points"], list)
-    # With only 3 data points, optimization might fail, but the structure should be correct
+    # With only 3 data points, optimization might fail, but the structure
+    # should be correct
     # If it succeeds, the list won't be empty.
     if data["frontier_points"]:
         assert "Risk" in data["frontier_points"][0]
@@ -65,17 +67,19 @@ def test_get_efficient_frontier_default_tickers():
     assert data["tangency_portfolio_weights"]
 
 
-@mock.patch('yfinance.download')
+@mock.patch("yfinance.download")
 def test_calculate_custom_portfolio(mock_yf_download):
     """Tests the /custom_portfolio_data endpoint."""
     # 1. Mock yfinance
     mock_data = {
-        ('VTI', 'Close'): [150.0, 151.0, 150.5, 152.0],
-        ('AGG', 'Close'): [110.0, 110.2, 110.1, 110.5]
+        ("VTI", "Close"): [150.0, 151.0, 150.5, 152.0],
+        ("AGG", "Close"): [110.0, 110.2, 110.1, 110.5]
     }
     mock_df = pd.DataFrame(mock_data)
-    mock_df.index = pd.to_datetime(['2023-01-01', '2023-01-02', '2023-01-03', '2023-01-04'])
-    mock_df.columns.names = ['Ticker', 'Price']
+    mock_df.index = pd.to_datetime([
+        "2023-01-01", "2023-01-02", "2023-01-03", "2023-01-04"
+    ])
+    mock_df.columns.names = ["Ticker", "Price"]
     mock_yf_download.return_value = mock_df
 
     # 2. Define request body
@@ -97,17 +101,19 @@ def test_calculate_custom_portfolio(mock_yf_download):
     assert isinstance(data["Return"], float)
 
 
-@mock.patch('yfinance.download')
+@mock.patch("yfinance.download")
 def test_optimize_by_return(mock_yf_download):
     """Tests the /optimize_by_return endpoint."""
     # 1. Mock yfinance
     mock_data = {
-        ('VTI', 'Close'): [150.0, 151.0, 150.5, 152.0, 153.0],
-        ('BND', 'Close'): [110.0, 110.2, 110.1, 110.5, 110.3]
+        ("VTI", "Close"): [150.0, 151.0, 150.5, 152.0, 153.0],
+        ("BND", "Close"): [110.0, 110.2, 110.1, 110.5, 110.3]
     }
     mock_df = pd.DataFrame(mock_data)
-    mock_df.index = pd.to_datetime(['2023-01-01', '2023-01-02', '2023-01-03', '2023-01-04', '2023-01-05'])
-    mock_df.columns.names = ['Ticker', 'Price']
+    mock_df.index = pd.to_datetime([
+        "2023-01-01", "2023-01-02", "2023-01-03", "2023-01-04", "2023-01-05"
+    ])
+    mock_df.columns.names = ["Ticker", "Price"]
     mock_yf_download.return_value = mock_df
 
     # 2. Define request body
@@ -131,16 +137,18 @@ def test_optimize_by_return(mock_yf_download):
     assert np.isclose(sum(data["weights"].values()), 1.0)
 
 
-@mock.patch('yfinance.download')
+@mock.patch("yfinance.download")
 def test_get_historical_performance(mock_yf_download):
     """Tests the /historical_performance endpoint."""
     # 1. Mock yfinance
     mock_data = {
-        ('VTI', 'Close'): [150.0, 151.0, 150.5, 152.0],
+        ("VTI", "Close"): [150.0, 151.0, 150.5, 152.0],
     }
     mock_df = pd.DataFrame(mock_data)
-    mock_df.index = pd.to_datetime(['2023-01-01', '2023-01-02', '2023-01-03', '2023-01-04'])
-    mock_df.columns.names = ['Ticker', 'Price']
+    mock_df.index = pd.to_datetime([
+        "2023-01-01", "2023-01-02", "2023-01-03", "2023-01-04"
+    ])
+    mock_df.columns.names = ["Ticker", "Price"]
     mock_yf_download.return_value = mock_df
 
     # 2. Define request body
