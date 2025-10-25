@@ -59,7 +59,7 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 @app.get("/", response_class=HTMLResponse)
-async def read_root(request: Request):
+async def read_root(request: Request) -> HTMLResponse:
     """Serves the main HTML page."""
     return templates.TemplateResponse("index.html", {"request": request})
 
@@ -88,12 +88,12 @@ except Exception as e:
 ALL_ETF_TICKERS = list(ETF_DEFINITIONS.keys())
 
 @app.get("/etf_list")
-async def get_etf_list():
+async def get_etf_list() -> dict:
     """Returns a dictionary of all ETF definitions."""
     return ETF_DEFINITIONS
 
 @app.get("/risk_free_rate")
-async def get_risk_free_rate():
+async def get_risk_free_rate() -> dict:
     """Returns the risk-free rate."""
     return {"risk_free_rate": RISK_FREE_RATE}
 
@@ -406,7 +406,7 @@ def _run_optimization_loop(
 
 
 @app.post("/custom_portfolio_data")
-async def calculate_custom_portfolio(request: CustomPortfolioRequest):
+async def calculate_custom_portfolio(request: CustomPortfolioRequest) -> dict:
     """Calculates risk and return for a custom portfolio."""
     tickers = request.tickers
     weights_dict = request.weights
@@ -453,7 +453,7 @@ async def calculate_custom_portfolio(request: CustomPortfolioRequest):
 
 
 @app.post("/optimize_by_return")
-async def optimize_by_return(request: TargetOptimizationRequest):
+async def optimize_by_return(request: TargetOptimizationRequest) -> dict:
     """Optimizes portfolio for a target return."""
     tickers = request.tickers
     target_return = request.target_value  # 小数として受け取る
@@ -522,7 +522,7 @@ async def optimize_by_return(request: TargetOptimizationRequest):
 
 
 @app.post("/optimize_by_risk")
-async def optimize_by_risk(request: TargetOptimizationRequest):
+async def optimize_by_risk(request: TargetOptimizationRequest) -> dict:
     """Optimizes portfolio for a target risk."""
     tickers = request.tickers
     target_risk = request.target_value  # 小数として受け取る
@@ -591,7 +591,7 @@ async def optimize_by_risk(request: TargetOptimizationRequest):
 
 
 @app.post("/historical_performance")
-async def get_historical_performance(request: HistoricalPerformanceRequest):
+async def get_historical_performance(request: HistoricalPerformanceRequest) -> dict:
     """Retrieves historical performance data for selected ETFs."""
     tickers = request.tickers
     period = request.period
@@ -626,7 +626,7 @@ async def get_historical_performance(request: HistoricalPerformanceRequest):
 
 
 @app.post("/monte_carlo_simulation")
-async def run_monte_carlo_simulation(request: MonteCarloSimulationRequest):
+async def run_monte_carlo_simulation(request: MonteCarloSimulationRequest) -> dict:
     """Runs a Monte Carlo simulation for portfolio returns."""
     tickers = request.tickers
     period = request.period
@@ -679,7 +679,7 @@ async def run_monte_carlo_simulation(request: MonteCarloSimulationRequest):
 
 
 @app.post("/analyze_csv_data")
-async def analyze_csv_data(request: CSVAnalysisRequest):
+async def analyze_csv_data(request: CSVAnalysisRequest) -> list[dict]:
     """Analyzes ETF data from a provided CSV file."""
     import io
 
@@ -723,7 +723,7 @@ async def analyze_csv_data(request: CSVAnalysisRequest):
 
 
 @app.post("/dca_simulation")
-async def run_dca_simulation(request: DcaSimulationRequest):
+async def run_dca_simulation(request: DcaSimulationRequest) -> dict:
     """Runs a Dollar-Cost Averaging (DCA) simulation."""
     try:
         # 1. Get historical data
@@ -794,7 +794,7 @@ async def run_dca_simulation(request: DcaSimulationRequest):
 
 
 @app.post("/future_dca_simulation")
-async def run_future_dca_simulation(request: FutureDcaSimulationRequest):
+async def run_future_dca_simulation(request: FutureDcaSimulationRequest) -> dict:
     """Runs a future Dollar-Cost Averaging (DCA) simulation."""
     try:
         # Simulation parameters
@@ -852,7 +852,7 @@ async def run_future_dca_simulation(request: FutureDcaSimulationRequest):
 
 
 @app.post("/correlation_matrix")
-async def get_correlation_matrix(request: HistoricalPerformanceRequest):
+async def get_correlation_matrix(request: HistoricalPerformanceRequest) -> dict:
     """Calculates and returns the correlation matrix for selected ETFs."""
     tickers = request.tickers
     period = request.period
@@ -882,7 +882,7 @@ async def get_correlation_matrix(request: HistoricalPerformanceRequest):
         return {"error": f"Error calculating correlation matrix: {str(e)}"}
 
 
-def format_market_cap(cap):
+def format_market_cap(cap) -> str:
     """Formats market capitalization for display."""
     if cap is None or not isinstance(cap, (int, float)):
         return "N/A"
@@ -898,7 +898,7 @@ def format_market_cap(cap):
 
 
 @app.get("/etf_details/{ticker}")
-async def get_etf_details(ticker: str):
+async def get_etf_details(ticker: str) -> dict:
     """Retrieves detailed information for a given ETF ticker."""
     # Check cache first
     if ticker in etf_details_cache:

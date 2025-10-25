@@ -27,7 +27,7 @@ router = APIRouter()
 @router.post("/register", response_model=UserInDB)
 async def register_user(
     request: Request, user: UserCreate, db: Session = Depends(get_db)
-):
+) -> UserInDB:
     """Registers a new user."""
     # Rate limiting will be handled by the main app or a middleware
     # await app.state.limiter(request, "10/minute")
@@ -58,7 +58,7 @@ async def register_user(
 async def login_for_access_token(
     request: Request,
     form_data: OAuth2PasswordRequestForm = Depends(),
-):
+) -> Token:
     """Authenticates a user and returns an access token."""
     # Rate limiting will be handled by the main app or a middleware
     # await app.state.limiter(request, "10/minute")
@@ -74,7 +74,7 @@ async def login_for_access_token(
 
 
 @router.post("/token/google", response_model=Token)
-async def login_google(google_token: GoogleToken, db: Session = Depends(get_db)):
+async def login_google(google_token: GoogleToken, db: Session = Depends(get_db)) -> Token:
     """Authenticates a user via Google and returns an access token."""
     try:
         # Firebase IDトークンを検証

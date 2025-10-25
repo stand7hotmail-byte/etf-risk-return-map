@@ -18,7 +18,7 @@ async def save_user_portfolio(
     portfolio_data: dict,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-):
+) -> dict:
     """Saves a user's portfolio."""
     portfolio_name = portfolio_data.get("name", "Untitled Portfolio")
     portfolio_content = json.dumps(portfolio_data.get("content", {}))
@@ -35,7 +35,7 @@ async def save_user_portfolio(
 @router.get("/list_portfolios")
 async def list_user_portfolios(
     db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
-):
+) -> list[dict]:
     """Lists all portfolios for the current user."""
     portfolios = db.query(Portfolio).filter(Portfolio.owner_id == current_user.id).all()
     return [
@@ -49,7 +49,7 @@ async def load_user_portfolio(
     portfolio_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-):
+) -> dict:
     """Loads a specific portfolio for the current user."""
     portfolio = get_user_portfolio_by_id(db, current_user.id, portfolio_id)
     return json.loads(portfolio.data)
@@ -60,7 +60,7 @@ async def delete_user_portfolio(
     portfolio_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-):
+) -> dict:
     """Deletes a specific portfolio for the current user."""
     portfolio = get_user_portfolio_by_id(db, current_user.id, portfolio_id)
     db.delete(portfolio)
