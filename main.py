@@ -897,6 +897,41 @@ def format_market_cap(cap) -> str:
     return str(cap)
 
 
+def _generate_etf_summary(info: dict, etf_static_data: dict, basic_info: dict) -> str:
+    summary_parts = []
+    fund_family = basic_info.get("fundFamily")
+    if fund_family and fund_family != "N/A":
+        summary_parts.append(f"「{fund_family}」が提供する")
+
+    category = info.get("category")
+    asset_class = etf_static_data.get("asset_class")
+    region = etf_static_data.get("region")
+
+    description_parts = []
+    if region and region.strip():
+        description_parts.append(f"【{region.strip()}】")
+    if asset_class and asset_class.strip():
+        description_parts.append(f"の【{asset_class.strip()}】")
+
+    if description_parts:
+        summary_parts.append("".join(description_parts) + "に投資するETFです。")
+
+    if category and category != "N/A":
+        summary_parts.append(f"カテゴリは「{category}」に分類されます。")
+
+    style = etf_static_data.get("style")
+    if style and style.strip():
+        summary_parts.append(f"投資スタイルは「{style.strip()}」です。")
+
+    theme = etf_static_data.get("theme")
+    if theme and theme.strip():
+        summary_parts.append(
+            f"「{theme.strip()}」というテーマに焦点を当てています。"
+        )
+
+    return " ".join(summary_parts) if summary_parts else "詳細なサマリーはありません。"
+
+
 @app.get("/etf_details/{ticker}")
 async def get_etf_details(ticker: str) -> dict:
     """Retrieves detailed information for a given ETF ticker."""
@@ -940,39 +975,8 @@ async def get_etf_details(ticker: str) -> dict:
             "52wk Low": info.get("fiftyTwoWeekLow", "N/A"),
         }
 
-        summary_parts = []
-        fund_family = basic_info.get("fundFamily")
-        if fund_family and fund_family != "N/A":
-            summary_parts.append(f"「{fund_family}」が提供する")
-
-        category = info.get("category")
-        asset_class = etf_static_data.get("asset_class")
-        region = etf_static_data.get("region")
-
-        description_parts = []
-        if region and region.strip():
-            description_parts.append(f"【{region.strip()}】")
-        if asset_class and asset_class.strip():
-            description_parts.append(f"の【{asset_class.strip()}】")
-
-        if description_parts:
-            summary_parts.append("".join(description_parts) + "に投資するETFです。")
-
-        if category and category != "N/A":
-            summary_parts.append(f"カテゴリは「{category}」に分類されます。")
-
-        style = etf_static_data.get("style")
-        if style and style.strip():
-            summary_parts.append(f"投資スタイルは「{style.strip()}」です。")
-
-        theme = etf_static_data.get("theme")
-        if theme and theme.strip():
-            summary_parts.append(
-                f"「{theme.strip()}」というテーマに焦点を当てています。"
-            )
-
-        basic_info["generatedSummary"] = (
-            " ".join(summary_parts) if summary_parts else "詳細なサマリーはありません。"
+        basic_info["generatedSummary"] = _generate_etf_summary(
+            info, etf_static_data, basic_info
         )
 
         result = {
