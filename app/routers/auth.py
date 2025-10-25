@@ -28,6 +28,7 @@ router = APIRouter()
 async def register_user(
     request: Request, user: UserCreate, db: Session = Depends(get_db)
 ):
+    """Registers a new user."""
     # Rate limiting will be handled by the main app or a middleware
     # await app.state.limiter(request, "10/minute")
     if not is_password_strong_enough(user.password):
@@ -53,13 +54,12 @@ async def register_user(
         )
 
 
-# ログインエンドポイント
 @router.post("/token", response_model=Token)
 async def login_for_access_token(
     request: Request,
     form_data: OAuth2PasswordRequestForm = Depends(),
-    db: Session = Depends(get_db),
 ):
+    """Authenticates a user and returns an access token."""
     # Rate limiting will be handled by the main app or a middleware
     # await app.state.limiter(request, "10/minute")
     user = db.query(User).filter(User.username == form_data.username).first()
@@ -73,9 +73,9 @@ async def login_for_access_token(
     return access_token_data
 
 
-# Googleログイン用エンドポイント
 @router.post("/token/google", response_model=Token)
 async def login_google(google_token: GoogleToken, db: Session = Depends(get_db)):
+    """Authenticates a user via Google and returns an access token."""
     try:
         # Firebase IDトークンを検証
         # Firebase Admin SDK initialization should be done once globally, not here.

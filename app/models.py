@@ -8,6 +8,8 @@ Base = declarative_base()
 
 
 class User(Base):
+    """Represents a user in the database."""
+
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -16,6 +18,8 @@ class User(Base):
 
 
 class Portfolio(Base):
+    """Represents a user's portfolio in the database."""
+
     __tablename__ = "portfolios"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -26,6 +30,8 @@ class Portfolio(Base):
 
 
 class StockPrice(Base):
+    """Represents a stock price entry in the database."""
+
     __tablename__ = "stock_prices"
 
     id = Column(Integer, primary_key=True, index=True)

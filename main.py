@@ -60,6 +60,7 @@ templates = Jinja2Templates(directory="templates")
 
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request):
+    """Serves the main HTML page."""
     return templates.TemplateResponse("index.html", {"request": request})
 
 
@@ -88,10 +89,12 @@ ALL_ETF_TICKERS = list(ETF_DEFINITIONS.keys())
 
 @app.get("/etf_list")
 async def get_etf_list():
+    """Returns a dictionary of all ETF definitions."""
     return ETF_DEFINITIONS
 
 @app.get("/risk_free_rate")
 async def get_risk_free_rate():
+    """Returns the risk-free rate."""
     return {"risk_free_rate": RISK_FREE_RATE}
 
 # ... (existing code) ...
@@ -262,23 +265,23 @@ async def get_efficient_frontier(
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 
-# ポートフォリオのリスクを計算する関数
 def portfolio_volatility(weights: np.ndarray, cov_matrix: pd.DataFrame) -> float:
+    """Calculates the portfolio volatility."""
     return np.sqrt(np.dot(weights.T, np.dot(cov_matrix, weights)))
 
 
-# ポートフォリオのリターンを計算する関数
 def portfolio_return(weights: np.ndarray, avg_returns: pd.Series) -> float:
+    """Calculates the portfolio return."""
     return np.sum(avg_returns * weights)
 
 
-# シャープ・レシオを計算する関数
 def portfolio_sharpe_ratio(
     weights: np.ndarray,
     avg_returns: pd.Series,
     cov_matrix: pd.DataFrame,
     risk_free_rate: float,
 ) -> float:
+    """Calculates the portfolio Sharpe ratio."""
     p_return = portfolio_return(weights, avg_returns)
     p_volatility = portfolio_volatility(weights, cov_matrix)
     if p_volatility == 0:  # リスクが0の場合は無限大を返す（または非常に大きな値）
@@ -289,6 +292,7 @@ def portfolio_sharpe_ratio(
 def portfolio_downside_deviation(
     weights: np.ndarray, returns: pd.DataFrame, risk_free_rate: float
 ) -> float:
+    """Calculates the portfolio downside deviation."""
     portfolio_returns = np.dot(returns, weights)
     downside_returns = portfolio_returns[portfolio_returns < risk_free_rate]
     if len(downside_returns) == 0:  # No downside returns, so downside deviation is 0
@@ -305,6 +309,7 @@ def portfolio_sortino_ratio(
     cov_matrix: pd.DataFrame,
     risk_free_rate: float,
 ) -> float:
+    """Calculates the portfolio Sortino ratio."""
     p_return = portfolio_return(weights, avg_returns)
     downside_dev = portfolio_downside_deviation(weights, returns, risk_free_rate)
     if downside_dev == 0:
@@ -402,6 +407,7 @@ def _run_optimization_loop(
 
 @app.post("/custom_portfolio_data")
 async def calculate_custom_portfolio(request: CustomPortfolioRequest):
+    """Calculates risk and return for a custom portfolio."""
     tickers = request.tickers
     weights_dict = request.weights
     period = request.period
@@ -448,6 +454,7 @@ async def calculate_custom_portfolio(request: CustomPortfolioRequest):
 
 @app.post("/optimize_by_return")
 async def optimize_by_return(request: TargetOptimizationRequest):
+    """Optimizes portfolio for a target return."""
     tickers = request.tickers
     target_return = request.target_value  # 小数として受け取る
     period = request.period  # <--- Get period from request
@@ -516,6 +523,7 @@ async def optimize_by_return(request: TargetOptimizationRequest):
 
 @app.post("/optimize_by_risk")
 async def optimize_by_risk(request: TargetOptimizationRequest):
+    """Optimizes portfolio for a target risk."""
     tickers = request.tickers
     target_risk = request.target_value  # 小数として受け取る
     period = request.period  # <--- Get period from request
@@ -584,6 +592,7 @@ async def optimize_by_risk(request: TargetOptimizationRequest):
 
 @app.post("/historical_performance")
 async def get_historical_performance(request: HistoricalPerformanceRequest):
+    """Retrieves historical performance data for selected ETFs."""
     tickers = request.tickers
     period = request.period
 
@@ -618,6 +627,7 @@ async def get_historical_performance(request: HistoricalPerformanceRequest):
 
 @app.post("/monte_carlo_simulation")
 async def run_monte_carlo_simulation(request: MonteCarloSimulationRequest):
+    """Runs a Monte Carlo simulation for portfolio returns."""
     tickers = request.tickers
     period = request.period
     num_simulations = request.num_simulations
@@ -670,6 +680,7 @@ async def run_monte_carlo_simulation(request: MonteCarloSimulationRequest):
 
 @app.post("/analyze_csv_data")
 async def analyze_csv_data(request: CSVAnalysisRequest):
+    """Analyzes ETF data from a provided CSV file."""
     import io
 
     try:
@@ -713,6 +724,7 @@ async def analyze_csv_data(request: CSVAnalysisRequest):
 
 @app.post("/dca_simulation")
 async def run_dca_simulation(request: DcaSimulationRequest):
+    """Runs a Dollar-Cost Averaging (DCA) simulation."""
     try:
         # 1. Get historical data
         data = yf.download(
@@ -783,6 +795,7 @@ async def run_dca_simulation(request: DcaSimulationRequest):
 
 @app.post("/future_dca_simulation")
 async def run_future_dca_simulation(request: FutureDcaSimulationRequest):
+    """Runs a future Dollar-Cost Averaging (DCA) simulation."""
     try:
         # Simulation parameters
         num_simulations = 500  # Number of Monte Carlo simulations
@@ -840,6 +853,7 @@ async def run_future_dca_simulation(request: FutureDcaSimulationRequest):
 
 @app.post("/correlation_matrix")
 async def get_correlation_matrix(request: HistoricalPerformanceRequest):
+    """Calculates and returns the correlation matrix for selected ETFs."""
     tickers = request.tickers
     period = request.period
 
@@ -869,6 +883,7 @@ async def get_correlation_matrix(request: HistoricalPerformanceRequest):
 
 
 def format_market_cap(cap):
+    """Formats market capitalization for display."""
     if cap is None or not isinstance(cap, (int, float)):
         return "N/A"
     if cap >= 1_000_000_000_000:
@@ -884,6 +899,7 @@ def format_market_cap(cap):
 
 @app.get("/etf_details/{ticker}")
 async def get_etf_details(ticker: str):
+    """Retrieves detailed information for a given ETF ticker."""
     # Check cache first
     if ticker in etf_details_cache:
         cached_entry = etf_details_cache[ticker]
