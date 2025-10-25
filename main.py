@@ -60,7 +60,7 @@ templates = Jinja2Templates(directory="templates")
 
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request) -> HTMLResponse:
-    """Serves the main HTML page."""
+    """Serve the main HTML page."""
     return templates.TemplateResponse("index.html", {"request": request})
 
 
@@ -89,12 +89,12 @@ ALL_ETF_TICKERS = list(ETF_DEFINITIONS.keys())
 
 @app.get("/etf_list")
 async def get_etf_list() -> dict:
-    """Returns a dictionary of all ETF definitions."""
+    """Return a dictionary of all ETF definitions."""
     return ETF_DEFINITIONS
 
 @app.get("/risk_free_rate")
 async def get_risk_free_rate() -> dict:
-    """Returns the risk-free rate."""
+    """Return the risk-free rate."""
     return {"risk_free_rate": RISK_FREE_RATE}
 
 # ... (existing code) ...
@@ -102,7 +102,7 @@ async def get_risk_free_rate() -> dict:
 def _calculate_portfolio_metrics(
     data: pd.DataFrame, final_tickers: list[str]
 ) -> tuple[pd.Series, pd.DataFrame]:
-    """Calculates annual returns and covariance matrix for a given
+    """Calculate annual returns and covariance matrix for a given
     DataFrame of stock prices.
 
     Args:
@@ -125,7 +125,7 @@ def _calculate_portfolio_metrics(
 def _filter_efficient_frontier(
     efficient_frontier_points: list[dict[str, float]]
 ) -> list[dict[str, float]]:
-    """Filters the efficient frontier points to create a smooth, non-decreasing curve.
+    """Filter the efficient frontier points to create a smooth, non-decreasing curve.
 
     Args:
         efficient_frontier_points: A list of dictionaries, each representing
@@ -164,7 +164,8 @@ RISK_FREE_RATE = 0.02
 def _fetch_and_prepare_data(
     tickers: list[str], period: str, db: Session
 ) -> pd.DataFrame:
-    """Fetches historical stock data using yfinance.
+    """Fetch historical stock data using yfinance.
+
     (Database caching logic can be added here later)
     """
     data = yf.download(tickers, period=period, group_by="ticker")
@@ -201,7 +202,7 @@ async def get_efficient_frontier(
     period: str = Query("5y"),
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
-    """Calculates the efficient frontier and tangency portfolio for a given set of ETFs.
+    """Calculate the efficient frontier and tangency portfolio for a given set of ETFs."
 
     Args:
         tickers: A list of ETF tickers to include in the analysis.
@@ -266,12 +267,12 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 
 def portfolio_volatility(weights: np.ndarray, cov_matrix: pd.DataFrame) -> float:
-    """Calculates the portfolio volatility."""
+    """Calculate the portfolio volatility."""
     return np.sqrt(np.dot(weights.T, np.dot(cov_matrix, weights)))
 
 
 def portfolio_return(weights: np.ndarray, avg_returns: pd.Series) -> float:
-    """Calculates the portfolio return."""
+    """Calculate the portfolio return."""
     return np.sum(avg_returns * weights)
 
 
@@ -281,7 +282,7 @@ def portfolio_sharpe_ratio(
     cov_matrix: pd.DataFrame,
     risk_free_rate: float,
 ) -> float:
-    """Calculates the portfolio Sharpe ratio."""
+    """Calculate the portfolio Sharpe ratio."""
     p_return = portfolio_return(weights, avg_returns)
     p_volatility = portfolio_volatility(weights, cov_matrix)
     if p_volatility == 0:  # リスクが0の場合は無限大を返す（または非常に大きな値）
@@ -292,7 +293,7 @@ def portfolio_sharpe_ratio(
 def portfolio_downside_deviation(
     weights: np.ndarray, returns: pd.DataFrame, risk_free_rate: float
 ) -> float:
-    """Calculates the portfolio downside deviation."""
+    """Calculate the portfolio downside deviation."""
     portfolio_returns = np.dot(returns, weights)
     downside_returns = portfolio_returns[portfolio_returns < risk_free_rate]
     if len(downside_returns) == 0:  # No downside returns, so downside deviation is 0
@@ -309,7 +310,7 @@ def portfolio_sortino_ratio(
     cov_matrix: pd.DataFrame,
     risk_free_rate: float,
 ) -> float:
-    """Calculates the portfolio Sortino ratio."""
+    """Calculate the portfolio Sortino ratio."""
     p_return = portfolio_return(weights, avg_returns)
     downside_dev = portfolio_downside_deviation(weights, returns, risk_free_rate)
     if downside_dev == 0:
@@ -324,7 +325,7 @@ def _run_optimization_loop(
     final_tickers: list[str],
     risk_free_rate: float,
 ) -> tuple[list[dict[str, float]], dict[str, Any] | None, dict[str, float]]:
-    """Runs the optimization loop to calculate efficient frontier points
+    """Run the optimization loop to calculate efficient frontier points
     and the tangency portfolio.
 
     Args:
