@@ -10,7 +10,8 @@ with mock.patch(
     from app.crud import is_password_strong_enough
 
 
-def test_password_strong_enough():
+def test_password_strong_enough() -> None:
+    """Tests the is_password_strong_enough function."""
     assert is_password_strong_enough("StrongP@ss1")
     assert not is_password_strong_enough("weak")  # Too short
     assert not is_password_strong_enough("NO_LOWERCASE1")

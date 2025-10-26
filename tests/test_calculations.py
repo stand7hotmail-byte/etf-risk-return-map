@@ -15,8 +15,8 @@ with mock.patch("google.cloud.secretmanager.SecretManagerServiceClient"):
     )
 
 @pytest.fixture
-def mock_data():
-    """Provides mock data for testing calculation functions."""
+def mock_data() -> dict:
+    """Provide mock data for testing calculation functions."""
     # Using a small, predictable dataset
     avg_returns = pd.Series([0.1, 0.2, 0.15], index=["ETF1", "ETF2", "ETF3"])
 
@@ -36,14 +36,14 @@ def mock_data():
         "weights": weights
     }
 
-def test_portfolio_return(mock_data):
+def test_portfolio_return(mock_data: dict) -> None:
     """Tests the portfolio_return function."""
     p_return = portfolio_return(mock_data["weights"], mock_data["avg_returns"])
 
     # Expected: (0.1 + 0.2 + 0.15) / 3 = 0.45 / 3 = 0.15
     assert np.isclose(p_return, 0.15)
 
-def test_portfolio_volatility(mock_data):
+def test_portfolio_volatility(mock_data: dict) -> None:
     """Tests the portfolio_volatility function."""
     p_volatility = portfolio_volatility(mock_data["weights"], mock_data["cov_matrix"])
 
@@ -57,7 +57,7 @@ def test_portfolio_volatility(mock_data):
     expected_volatility = np.sqrt(0.05444444444)
     assert np.isclose(p_volatility, expected_volatility)
 
-def test_portfolio_sharpe_ratio(mock_data):
+def test_portfolio_sharpe_ratio(mock_data: dict) -> None:
     """Tests the portfolio_sharpe_ratio function."""
     p_return = portfolio_return(mock_data["weights"], mock_data["avg_returns"])
     p_volatility = portfolio_volatility(mock_data["weights"], mock_data["cov_matrix"])
@@ -71,7 +71,7 @@ def test_portfolio_sharpe_ratio(mock_data):
 
     assert np.isclose(sharpe_ratio, expected_sharpe)
 
-def test_portfolio_sharpe_ratio_zero_volatility(mock_data):
+def test_portfolio_sharpe_ratio_zero_volatility(mock_data: dict) -> None:
     """Tests that sharpe ratio handles zero volatility."""
     zero_cov_matrix = pd.DataFrame(np.zeros((3,3)), columns=["ETF1", "ETF2", "ETF3"])
     sharpe_ratio = portfolio_sharpe_ratio(

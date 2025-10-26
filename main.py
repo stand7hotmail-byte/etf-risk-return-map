@@ -202,7 +202,7 @@ async def get_efficient_frontier(
     period: str = Query("5y"),
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
-    """Calculate the efficient frontier and tangency portfolio for a given set of ETFs."
+    """Calculate the efficient frontier and tangency portfolio for a given set of ETFs.
 
     Args:
         tickers: A list of ETF tickers to include in the analysis.
@@ -356,7 +356,7 @@ def _run_optimization_loop(
 
     for target_return in target_returns:
 
-        def minimize_volatility(weights):
+        def minimize_volatility(weights: np.ndarray) -> float:
             return portfolio_volatility(weights, cov_matrix)
 
         constraints_with_target = constraints_list + (
@@ -408,7 +408,7 @@ def _run_optimization_loop(
 
 @app.post("/custom_portfolio_data")
 async def calculate_custom_portfolio(request: CustomPortfolioRequest) -> dict:
-    """Calculates risk and return for a custom portfolio."""
+    """Calculate risk and return for a custom portfolio."""
     tickers = request.tickers
     weights_dict = request.weights
     period = request.period
@@ -488,7 +488,7 @@ async def optimize_by_return(request: TargetOptimizationRequest) -> dict:
     ]
 
     # 目的関数: リスクを最小化
-    def minimize_volatility(weights):
+    def minimize_volatility(weights: np.ndarray) -> float:
         return portfolio_volatility(weights, cov_matrix)
 
     result = minimize(
@@ -557,7 +557,7 @@ async def optimize_by_risk(request: TargetOptimizationRequest) -> dict:
     ]
 
     # 目的関数: リターンを最大化 (minimizeなので負のリターンを最小化)
-    def maximize_return(weights):
+    def maximize_return(weights: np.ndarray) -> float:
         return -portfolio_return(weights, avg_returns)
 
     result = minimize(
@@ -593,7 +593,7 @@ async def optimize_by_risk(request: TargetOptimizationRequest) -> dict:
 
 @app.post("/historical_performance")
 async def get_historical_performance(request: HistoricalPerformanceRequest) -> dict:
-    """Retrieves historical performance data for selected ETFs."""
+    """Retrieve historical performance data for selected ETFs."""
     tickers = request.tickers
     period = request.period
 
@@ -628,7 +628,7 @@ async def get_historical_performance(request: HistoricalPerformanceRequest) -> d
 
 @app.post("/monte_carlo_simulation")
 async def run_monte_carlo_simulation(request: MonteCarloSimulationRequest) -> dict:
-    """Runs a Monte Carlo simulation for portfolio returns."""
+    """Run a Monte Carlo simulation for portfolio returns."""
     tickers = request.tickers
     period = request.period
     num_simulations = request.num_simulations
@@ -725,7 +725,7 @@ async def analyze_csv_data(request: CSVAnalysisRequest) -> list[dict]:
 
 @app.post("/dca_simulation")
 async def run_dca_simulation(request: DcaSimulationRequest) -> dict:
-    """Runs a Dollar-Cost Averaging (DCA) simulation."""
+    """Run a Dollar-Cost Averaging (DCA) simulation."""
     try:
         # 1. Get historical data
         data = yf.download(
@@ -796,7 +796,7 @@ async def run_dca_simulation(request: DcaSimulationRequest) -> dict:
 
 @app.post("/future_dca_simulation")
 async def run_future_dca_simulation(request: FutureDcaSimulationRequest) -> dict:
-    """Runs a future Dollar-Cost Averaging (DCA) simulation."""
+    """Run a future Dollar-Cost Averaging (DCA) simulation."""
     try:
         # Simulation parameters
         num_simulations = 500  # Number of Monte Carlo simulations
@@ -854,7 +854,7 @@ async def run_future_dca_simulation(request: FutureDcaSimulationRequest) -> dict
 
 @app.post("/correlation_matrix")
 async def get_correlation_matrix(request: HistoricalPerformanceRequest) -> dict:
-    """Calculates and returns the correlation matrix for selected ETFs."""
+    """Calculate and return the correlation matrix for selected ETFs."""
     tickers = request.tickers
     period = request.period
 
@@ -883,8 +883,8 @@ async def get_correlation_matrix(request: HistoricalPerformanceRequest) -> dict:
         return {"error": f"Error calculating correlation matrix: {str(e)}"}
 
 
-def format_market_cap(cap) -> str:
-    """Formats market capitalization for display."""
+def format_market_cap(cap: int | float | None) -> str:
+    """Format market capitalization for display."""
     if cap is None or not isinstance(cap, (int, float)):
         return "N/A"
     if cap >= 1_000_000_000_000:
@@ -935,7 +935,7 @@ def _generate_etf_summary(info: dict, etf_static_data: dict, basic_info: dict) -
 
 @app.get("/etf_details/{ticker}")
 async def get_etf_details(ticker: str) -> dict:
-    """Retrieves detailed information for a given ETF ticker."""
+    """Retrieve detailed information for a given ETF ticker."""
     # Check cache first
     if ticker in etf_details_cache:
         cached_entry = etf_details_cache[ticker]

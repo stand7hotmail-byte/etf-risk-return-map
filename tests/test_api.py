@@ -17,7 +17,7 @@ with mock.patch(
 client = TestClient(app)
 
 @mock.patch("yfinance.download")
-def test_get_efficient_frontier(mock_yf_download):
+def test_get_efficient_frontier(mock_yf_download: mock.Mock) -> None:
     """Tests the /efficient_frontier endpoint."""
     # 1. Create mock data that yfinance.download would return
     mock_data = {
@@ -56,7 +56,7 @@ def test_get_efficient_frontier(mock_yf_download):
     # Check weights structure
     assert isinstance(data["tangency_portfolio_weights"], dict)
 
-def test_get_efficient_frontier_default_tickers():
+def test_get_efficient_frontier_default_tickers() -> None:
     """Tests the /efficient_frontier endpoint when it uses the default tickers."""
     # This test is slow because it calculates the full frontier
     response = client.get("/efficient_frontier")
@@ -68,7 +68,7 @@ def test_get_efficient_frontier_default_tickers():
 
 
 @mock.patch("yfinance.download")
-def test_calculate_custom_portfolio(mock_yf_download):
+def test_calculate_custom_portfolio(mock_yf_download: mock.Mock) -> None:
     """Tests the /custom_portfolio_data endpoint."""
     # 1. Mock yfinance
     mock_data = {
@@ -102,7 +102,7 @@ def test_calculate_custom_portfolio(mock_yf_download):
 
 
 @mock.patch("yfinance.download")
-def test_optimize_by_return(mock_yf_download):
+def test_optimize_by_return(mock_yf_download: mock.Mock) -> None:
     """Tests the /optimize_by_return endpoint."""
     # 1. Mock yfinance
     mock_data = {
@@ -138,7 +138,7 @@ def test_optimize_by_return(mock_yf_download):
 
 
 @mock.patch("yfinance.download")
-def test_get_historical_performance(mock_yf_download):
+def test_get_historical_performance(mock_yf_download: mock.Mock) -> None:
     """Tests the /historical_performance endpoint."""
     # 1. Mock yfinance
     mock_data = {

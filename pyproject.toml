@@ -28,4 +28,5 @@ ignore = [
     "D105", # Missing docstring in magic method
     "D107",
     "B008", # Ignore B008 for FastAPI Depends usage
+    "D205", # Ignore blank line after summary
 ]
