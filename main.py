@@ -1,5 +1,7 @@
 import csv
 import time
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 from typing import Any
 
@@ -18,6 +20,7 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 from sqlalchemy.orm import Session
 
+from app.crud import PROJECT_ID, access_secret_version
 from app.database import get_db
 from app.schemas import (
     CSVAnalysisRequest,
@@ -30,6 +33,30 @@ from app.schemas import (
 )
 
 app = FastAPI()
+
+# --- Lifespan Manager ---
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    """Manage the startup and shutdown of the application."""
+    print("Application startup...")
+    try:
+        app.state.secret_key = access_secret_version(PROJECT_ID, "JWT_SECRET_KEY")
+        print("Successfully fetched JWT_SECRET_KEY.")
+
+        # Firebase APIキーも同様に取得（もし必要なら）
+        # app.state.firebase_api_key = access_secret_version(
+        #     PROJECT_ID, "FIREBASE_API_KEY"
+        # )
+        # print("Successfully fetched FIREBASE_API_KEY.")
+
+    except Exception as e:
+        print(f"FATAL: Could not fetch secrets on startup: {e}")
+
+    yield
+
+    print("Application shutdown.")
+
+app = FastAPI(lifespan=lifespan)
 
 origins = [
     "https://etf-risk-return-map-project.an.r.appspot.com",

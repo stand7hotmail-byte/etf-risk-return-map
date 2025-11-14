@@ -3,7 +3,7 @@ import re
 from datetime import datetime, timedelta
 
 import pandas as pd
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
 from google.cloud import secretmanager
 from jose import JWTError, jwt
@@ -35,7 +35,7 @@ PROJECT_ID = (
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # JWT認証設定
-SECRET_KEY = access_secret_version(PROJECT_ID, "JWT_SECRET_KEY")
+# SECRET_KEYはFastAPIのlifespanイベントで設定される
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
@@ -97,7 +97,11 @@ def get_password_hash(password: str) -> str:
     return pwd_context.hash(password)
 
 
-def create_access_token(data: dict, expires_delta: timedelta | None = None) -> str:
+def create_access_token(
+    data: dict,
+    expires_delta: timedelta | None = None,
+    request: Request = Depends(),
+) -> str:
     """Create an access token."""
     to_encode = data.copy()
     if expires_delta:
@@ -105,12 +109,15 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None) -> s
     else:
         expire = datetime.utcnow() + timedelta(minutes=15)
     to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    secret_key = request.app.state.secret_key
+    encoded_jwt = jwt.encode(to_encode, secret_key, algorithm=ALGORITHM)
     return encoded_jwt
 
 
 async def get_current_user(
-    token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)
+    token: str = Depends(oauth2_scheme),
+    db: Session = Depends(get_db),
+    request: Request = Depends(),
 ) -> User:
     """Retrieve the current authenticated user from the database."""
     credentials_exception = HTTPException(
@@ -119,7 +126,8 @@ async def get_current_user(
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        secret_key = request.app.state.secret_key
+        payload = jwt.decode(token, secret_key, algorithms=[ALGORITHM])
         username: str = payload.get("sub")
         if username is None:
             raise credentials_exception
