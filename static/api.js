@@ -88,12 +88,12 @@ export async function deletePortfolio(id) {
 
 // --- ETF Data APIs ---
 export async function getEtfList() {
-    const response = await fetch('/etf_list');
+    const response = await fetch('/etfs/list');
     return response.json();
 }
 
 export async function getRiskFreeRate() {
-    const response = await fetch('/risk_free_rate');
+    const response = await fetch('/etfs/risk_free_rate');
     return response.json();
 }
 
@@ -103,7 +103,7 @@ export async function getMapData(tickers, period) {
     queryParams.append('period', period);
 
     // Now only call efficient_frontier, which will return both etf_data and frontier_points
-    const response = await fetch(`/efficient_frontier?${queryParams.toString()}`);
+    const response = await fetch(`/portfolio/efficient_frontier?${queryParams.toString()}`);
     if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.detail || 'An API error occurred while fetching map data');
@@ -113,7 +113,7 @@ export async function getMapData(tickers, period) {
 }
 
 export async function getCustomPortfolioData(tickers, weights, period) {
-    return post('/custom_portfolio_data', { tickers, weights, period });
+    return post('/portfolio/custom_metrics', { tickers, weights, period });
 }
 
 export async function optimizePortfolio(url, tickers, target_value, period) {
@@ -121,23 +121,23 @@ export async function optimizePortfolio(url, tickers, target_value, period) {
 }
 
 export async function getHistoricalPerformance(tickers, period) {
-    return post('/historical_performance', { tickers, period });
+    return post('/analysis/historical_performance', { tickers, period });
 }
 
 export async function runMonteCarlo(tickers, period, num_simulations, simulation_days) {
-    return post('/monte_carlo_simulation', { tickers, period, num_simulations, simulation_days });
+    return post('/simulation/monte_carlo', { tickers, period, num_simulations, simulation_days });
 }
 
 export async function runDcaSimulation(tickers, weights, period, investment_amount, frequency) {
-    return post('/dca_simulation', { tickers, weights, period, investment_amount, frequency });
+    return post('/simulation/historical_dca', { tickers, weights, period, investment_amount, frequency });
 }
 
 export async function analyzeCsv(csv_data) {
-    return post('/analyze_csv_data', { csv_data });
+    return post('/analysis/csv', { csv_data });
 }
 
 export async function runFutureDcaSimulation(portfolioReturn, portfolioRisk, investmentAmount, frequency, years) {
-    return post('/future_dca_simulation', { 
+    return post('/simulation/future_dca', { 
         portfolio_return: portfolioReturn, 
         portfolio_risk: portfolioRisk, 
         investment_amount: investmentAmount, 
@@ -147,11 +147,11 @@ export async function runFutureDcaSimulation(portfolioReturn, portfolioRisk, inv
 }
 
 export async function getCorrelationMatrix(tickers, period) {
-    return post('/correlation_matrix', { tickers, period });
+    return post('/analysis/correlation_matrix', { tickers, period });
 }
 
 export async function getEtfDetails(ticker) {
-    const response = await fetch(`/etf_details/${ticker}`);
+    const response = await fetch(`/etfs/details/${ticker}`);
     if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.detail || 'Failed to fetch ETF details');

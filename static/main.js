@@ -373,7 +373,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const period = ui.dataPeriodSelect.value;
 
         try {
-            const result = await api.optimizePortfolio('/optimize_by_return', selectedTickers, targetReturn, period);
+            const result = await api.optimizePortfolio('/portfolio/optimize_by_return', selectedTickers, targetReturn, period);
             
             let resultHtml = `<h3>Optimized for Return</h3>
                 <p><strong>Achieved Return:</strong> ${(result.Return * 100).toFixed(2)}%</p>
@@ -402,7 +402,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const period = ui.dataPeriodSelect.value;
 
         try {
-            const result = await api.optimizePortfolio('/optimize_by_risk', selectedTickers, targetRisk, period);
+            const result = await api.optimizePortfolio('/portfolio/optimize_by_risk', selectedTickers, targetRisk, period);
 
             let resultHtml = `<h3>Optimized for Risk</h3>
                 <p><strong>Achieved Risk:</strong> ${(result.Risk * 100).toFixed(2)}%</p>
