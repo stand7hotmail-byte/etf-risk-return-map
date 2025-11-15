@@ -11,14 +11,16 @@ class SimulationService:
     Performs financial simulations like Monte Carlo and Dollar-Cost Averaging (DCA).
     """
 
-    def __init__(self, data_service: DataService):
+    def __init__(self, data_service: DataService, risk_free_rate: float):
         """
         Initializes the SimulationService.
 
         Args:
             data_service: An instance of DataService to fetch price data.
+            risk_free_rate: The risk-free rate for calculations.
         """
         self.data_service = data_service
+        self.risk_free_rate = risk_free_rate
 
     def run_monte_carlo(
         self,

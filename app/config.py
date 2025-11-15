@@ -13,10 +13,8 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # --- Path Constants ---
-# Assuming the script is run from the project root for testing purposes.
-# For production, Path(__file__).resolve().parent.parent might be more appropriate
-# if the app is deployed as a package.
-BASE_DIR = Path(os.getcwd())
+# Assuming structure: project/app/config.py
+BASE_DIR = Path(__file__).resolve().parent.parent  # Goes up to project root
 STATIC_DIR = BASE_DIR / "static"
 TEMPLATES_DIR = BASE_DIR / "templates"
 ETF_LIST_PATH = BASE_DIR / "etf_list.csv"
