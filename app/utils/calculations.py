@@ -1,12 +1,13 @@
 from typing import List, Dict
 
+
 def filter_efficient_frontier(
     efficient_frontier_points: List[Dict[str, float]]
 ) -> List[Dict[str, float]]:
     """
     Filters the efficient frontier points to create a smooth, non-decreasing curve.
 
-    It ensures that for an increasing risk, the return is also non-decreasing.
+    Ensures that for increasing risk, the return is also non-decreasing.
     If two points have the same risk, the one with the higher return is kept.
 
     Args:
@@ -15,29 +16,54 @@ def filter_efficient_frontier(
 
     Returns:
         A filtered and sorted list of efficient frontier points.
+        
+    Examples:
+        >>> points = [
+        ...     {"Risk": 0.1, "Return": 0.05},
+        ...     {"Risk": 0.2, "Return": 0.08},
+        ...     {"Risk": 0.15, "Return": 0.06}
+        ... ]
+        >>> filtered = filter_efficient_frontier(points)
+        >>> len(filtered)
+        3
     """
     if not efficient_frontier_points:
         return []
 
-    # Sort points by risk primarily, and by return secondarily (descending)
-    # to handle cases with the same risk level easily.
-    efficient_frontier_points.sort(key=lambda x: (x["Risk"], -x["Return"]))
+    # Sort by risk ascending, then by return descending for same risk
+    sorted_points = sorted(
+        efficient_frontier_points,
+        key=lambda x: (x["Risk"], -x["Return"])
+    )
 
-    filtered_frontier = []
-    if efficient_frontier_points:
-        # Add the first point (lowest risk)
-        filtered_frontier.append(efficient_frontier_points[0])
+    filtered_frontier = [sorted_points[0]]  # Start with lowest risk point
+    
+    for current_point in sorted_points[1:]:
+        last_point = filtered_frontier[-1]
         
-        # Iterate through the rest of the points
-        for i in range(1, len(efficient_frontier_points)):
-            current_point = efficient_frontier_points[i]
-            last_filtered_point = filtered_frontier[-1]
-
-            # If the current point has higher risk and higher or equal return, add it.
-            if current_point["Risk"] > last_filtered_point["Risk"] and \
-               current_point["Return"] >= last_filtered_point["Return"]:
-                filtered_frontier.append(current_point)
-            # If risk is the same, the sort order ensures we've already picked the best return,
-            # so we just skip subsequent points with the same risk.
+        # Only add if risk increases AND return doesn't decrease
+        if (current_point["Risk"] > last_point["Risk"] and 
+            current_point["Return"] >= last_point["Return"]):
+            filtered_frontier.append(current_point)
+        # Skip points with same risk (we already have the best one due to sort)
 
     return filtered_frontier
+
+
+def normalize_weights(weights: List[float]) -> List[float]:
+    """
+    Normalizes a list of weights to sum to 1.0.
+    
+    Args:
+        weights: List of weight values.
+        
+    Returns:
+        Normalized weights that sum to 1.0.
+        
+    Raises:
+        ValueError: If sum of weights is zero or negative.
+    """
+    total = sum(weights)
+    if total <= 0:
+        raise ValueError("Sum of weights must be positive")
+    return [w / total for w in weights]
