@@ -66,22 +66,20 @@ def get_portfolio_calculator() -> PortfolioCalculator:
 
 # --- Data Service (Per-request) ---
 def get_data_service(
-    db: Annotated[Session, Depends(get_db)],
     cache: Annotated[CacheManager, Depends(get_cache_manager)]
 ) -> DataService:
     """
     Provides a DataService instance for each request.
     
-    Note: Not cached because db Session should be per-request.
+    Note: The 'db' dependency has been removed as DataService no longer uses it directly.
     
     Args:
-        db: Database session (per-request).
         cache: Shared cache manager instance.
     
     Returns:
         DataService: A new DataService instance.
     """
-    return DataService(db=db, cache_manager=cache)
+    return DataService(cache_manager=cache)
 
 
 # --- ETF Service (Per-request) ---
@@ -117,7 +115,7 @@ def get_optimization_service(
         data_service: The data service instance (per-request).
         settings: Application settings.
     
-Returns:
+    Returns:
         OptimizationService: A new OptimizationService instance.
     """
     return OptimizationService(
