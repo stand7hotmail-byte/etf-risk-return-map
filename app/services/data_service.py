@@ -7,9 +7,10 @@ import pandas as pd
 import requests
 import yfinance as yf
 from fastapi import HTTPException
-from sqlalchemy.orm import Session  # Keep for now, might be used later
+
 
 from app.utils.cache import CacheManager
+from app.constants import TRADING_DAYS_PER_YEAR
 
 logger = logging.getLogger(__name__)
 
@@ -198,8 +199,8 @@ class DataService:
             if returns.empty:
                 raise ValueError("Not enough data to calculate returns from CSV.")
 
-            annual_returns = returns.mean() * 252
-            annual_volatility = returns.std() * np.sqrt(252)
+            annual_returns = returns.mean() * TRADING_DAYS_PER_YEAR
+            annual_volatility = returns.std() * np.sqrt(TRADING_DAYS_PER_YEAR)
 
             result_df = pd.DataFrame({
                 "Return": annual_returns,

@@ -7,7 +7,10 @@ from scipy.optimize import minimize, OptimizeResult
 
 from app.models.portfolio import PortfolioCalculator
 from app.services.data_service import DataService
+from fastapi import HTTPException
 from app.utils.calculations import filter_efficient_frontier
+from app.schemas import OptimizationResult, PortfolioMetrics, ETFData, EfficientFrontierPoint, TangencyPortfolio
+from app.constants import TRADING_DAYS_PER_YEAR
 
 logger = logging.getLogger(__name__)
 
@@ -82,7 +85,7 @@ class OptimizationService:
 
     def calculate_efficient_frontier(
         self, tickers: List[str], period: str
-    ) -> Dict[str, Any]:
+    ) -> OptimizationResult:
         """
         Calculates the efficient frontier and the tangency portfolio (max Sharpe ratio).
 
@@ -97,12 +100,12 @@ class OptimizationService:
         logger.info(f"Calculating efficient frontier for {len(tickers)} tickers: {tickers}, period: {period}")
         if not tickers:
             logger.warning("No tickers provided for efficient frontier calculation.")
-            return {
-                "etf_data": [],
-                "frontier_points": [],
-                "tangency_portfolio": None,
-                "tangency_portfolio_weights": {},
-            }
+            return OptimizationResult(
+                etf_data=[],
+                frontier_points=[],
+                tangency_portfolio=None,
+                tangency_portfolio_weights={},
+            )
 
         _, final_tickers, avg_returns, cov_matrix, _ = self._prepare_portfolio_data(tickers, period)
 
@@ -128,7 +131,7 @@ class OptimizationService:
                 p_volatility = self.calculator.calculate_portfolio_volatility(tangency_w, cov_matrix)
                 sharpe = self.calculator.calculate_sharpe_ratio(p_return, p_volatility, self.risk_free_rate)
                 
-                tangency_portfolio = {"Return": float(p_return), "Risk": float(p_volatility), "SharpeRatio": float(sharpe)}
+                tangency_portfolio = TangencyPortfolio(Return=float(p_return), Risk=float(p_volatility), SharpeRatio=float(sharpe))
                 tangency_weights = {t: float(w) for t, w in zip(final_tickers, tangency_w)}
                 logger.info(f"Tangency portfolio found: Sharpe={sharpe:.4f}")
             else:
@@ -157,7 +160,7 @@ class OptimizationService:
             if min_vol_result.success and self.calculator.validate_weights(min_vol_result.x):
                 p_return = self.calculator.calculate_portfolio_return(min_vol_result.x, avg_returns)
                 p_volatility = self.calculator.calculate_portfolio_volatility(min_vol_result.x, cov_matrix)
-                frontier_points.append({"Return": float(p_return), "Risk": float(p_volatility)})
+                frontier_points.append(EfficientFrontierPoint(Return=float(p_return), Risk=float(p_volatility)))
         
         filtered_frontier = filter_efficient_frontier(frontier_points)
         logger.info(f"Generated {len(filtered_frontier)} filtered frontier points.")
@@ -167,15 +170,15 @@ class OptimizationService:
         for ticker in final_tickers:
             etf_return = avg_returns[ticker]
             etf_risk = np.sqrt(cov_matrix.loc[ticker, ticker]) # Individual volatility is sqrt of variance
-            etf_data.append({"Ticker": ticker, "Return": float(etf_return), "Risk": float(etf_risk)})
+            etf_data.append(ETFData(Ticker=ticker, Return=float(etf_return), Risk=float(etf_risk)))
         
         logger.info("Efficient frontier calculation complete.")
-        return {
-            "etf_data": etf_data,
-            "frontier_points": filtered_frontier,
-            "tangency_portfolio": tangency_portfolio,
-            "tangency_portfolio_weights": tangency_weights,
-        }
+        return OptimizationResult(
+            etf_data=etf_data,
+            frontier_points=filtered_frontier,
+            tangency_portfolio=tangency_portfolio,
+            tangency_portfolio_weights=tangency_weights,
+        )
 
     def _run_optimization(
         self,
@@ -228,7 +231,7 @@ class OptimizationService:
 
     def optimize_by_target_return(
         self, tickers: List[str], target_return: float, period: str
-    ) -> Dict[str, Any]:
+    ) -> PortfolioMetrics:
         """
         Optimizes a portfolio to achieve a target return while minimizing risk.
 
@@ -267,23 +270,25 @@ class OptimizationService:
             sortino = self.calculator.calculate_sortino_ratio(p_return, downside_dev, self.risk_free_rate)
             
             logger.info(f"Optimization by target return successful. Risk: {p_volatility:.4f}, Return: {p_return:.4f}")
-            return {
-                "Risk": float(p_volatility),
-                "Return": float(p_return),
-                "SortinoRatio": float(sortino),
-                "weights": {t: float(w) for t, w in zip(final_tickers, weights)},
-            }
+            return PortfolioMetrics(
+                Risk=float(p_volatility),
+                Return=float(p_return),
+                SortinoRatio=float(sortino),
+                weights={t: float(w) for t, w in zip(final_tickers, weights)},
+            )
         else:
             error_msg = f"Could not find an optimal portfolio for the given target return ({target_return:.2%})."
             logger.warning(f"{error_msg} Details: {result.message}")
-            return {
-                "error": error_msg,
-                "details": result.message,
-            }
+            return PortfolioMetrics(
+                Risk=0.0,
+                Return=0.0,
+                error=error_msg,
+                details=str(result.message),
+            )
 
     def optimize_by_target_risk(
         self, tickers: List[str], target_risk: float, period: str
-    ) -> Dict[str, Any]:
+    ) -> PortfolioMetrics:
         """
         Optimizes a portfolio to match a target risk level while maximizing return.
 
@@ -327,23 +332,25 @@ class OptimizationService:
             sortino = self.calculator.calculate_sortino_ratio(p_return, downside_dev, self.risk_free_rate)
 
             logger.info(f"Optimization by target risk successful. Risk: {p_volatility:.4f}, Return: {p_return:.4f}")
-            return {
-                "Risk": float(p_volatility),
-                "Return": float(p_return),
-                "SortinoRatio": float(sortino),
-                "weights": {t: float(w) for t, w in zip(final_tickers, weights)},
-            }
+            return PortfolioMetrics(
+                Risk=float(p_volatility),
+                Return=float(p_return),
+                SortinoRatio=float(sortino),
+                weights={t: float(w) for t, w in zip(final_tickers, weights)},
+            )
         else:
             error_msg = f"Could not find an optimal portfolio for the given target risk ({target_risk:.2%})."
             logger.warning(f"{error_msg} Details: {result.message}")
-            return {
-                "error": error_msg,
-                "details": result.message,
-            }
+            return PortfolioMetrics(
+                Risk=0.0,
+                Return=0.0,
+                error=error_msg,
+                details=str(result.message),
+            )
 
     def calculate_custom_portfolio_metrics(
         self, tickers: List[str], weights_dict: Dict[str, float], period: str
-    ) -> Dict[str, Any]:
+    ) -> PortfolioMetrics:
         """
         Calculates the risk and return for a portfolio with custom weights.
 
@@ -366,7 +373,7 @@ class OptimizationService:
             weights_array = weights_array / np.sum(weights_array)
         else:
             logger.error("Sum of custom portfolio weights is zero or negative.")
-            return {"error": "Sum of weights cannot be zero or negative."}
+            return PortfolioMetrics(Risk=0.0, Return=0.0, error="Sum of weights cannot be zero or negative.")
 
         if not self.calculator.validate_weights(weights_array):
             logger.warning("Custom portfolio weights did not sum to 1.0 after normalization.")
@@ -376,4 +383,4 @@ class OptimizationService:
         p_volatility = self.calculator.calculate_portfolio_volatility(weights_array, cov_matrix)
 
         logger.info(f"Custom portfolio metrics calculated. Risk: {p_volatility:.4f}, Return: {p_return:.4f}")
-        return {"Risk": float(p_volatility), "Return": float(p_return)}
+        return PortfolioMetrics(Risk=float(p_volatility), Return=float(p_return))

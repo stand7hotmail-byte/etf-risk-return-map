@@ -7,7 +7,8 @@ import pandas as pd
 logger = logging.getLogger(__name__)
 
 # Constants
-TRADING_DAYS_PER_YEAR = 252
+from app.constants import TRADING_DAYS_PER_YEAR
+
 
 
 class PortfolioCalculator:
