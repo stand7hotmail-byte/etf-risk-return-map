@@ -16,9 +16,20 @@ router = APIRouter(
 async def get_historical_performance(
     request: HistoricalPerformanceRequest,
     data_service: DataService = Depends(get_data_service),
-):
+) -> Dict[str, Any]:
     """
     Retrieves historical performance (cumulative returns) for a list of tickers.
+    
+    Args:
+        request: Historical performance request with tickers and period
+        
+    Returns:
+        Dictionary containing:
+        - dates: List of dates
+        - cumulative_returns: Dict mapping tickers to their cumulative return series
+        
+    Raises:
+        HTTPException: 404 if tickers not found, 400 if period invalid
     """
     return data_service.get_historical_performance(request.tickers, request.period)
 
@@ -27,9 +38,21 @@ async def get_historical_performance(
 async def get_correlation_matrix(
     request: HistoricalPerformanceRequest,
     data_service: DataService = Depends(get_data_service),
-):
+) -> Dict[str, Any]:
     """
     Calculates the correlation matrix for a list of tickers.
+    
+    Args:
+        request: Correlation matrix request with tickers and period
+        
+    Returns:
+        Dictionary formatted for heatmap visualization:
+        - x: List of ticker symbols (columns)
+        - y: List of ticker symbols (rows)
+        - z: 2D array of correlation values
+        
+    Raises:
+        HTTPException: 404 if tickers not found, 400 if insufficient data
     """
     return data_service.get_correlation_matrix(request.tickers, request.period)
 
@@ -38,8 +61,20 @@ async def get_correlation_matrix(
 async def analyze_csv_data(
     request: CSVAnalysisRequest,
     data_service: DataService = Depends(get_data_service),
-):
+) -> List[Dict[str, Any]]:
     """
     Analyzes ETF data from a provided CSV file string and returns risk/return metrics.
+    
+    Args:
+        request: CSV analysis request containing CSV data as string
+        
+    Returns:
+        List of dictionaries, each containing:
+        - Ticker: ETF ticker symbol
+        - Risk: Annualized volatility
+        - Return: Annualized return
+        
+    Raises:
+        HTTPException: 400 if CSV format invalid or data insufficient
     """
     return data_service.load_and_analyze_csv(request.csv_data)
