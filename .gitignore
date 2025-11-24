@@ -15,3 +15,4 @@ etf-webapp-firebase-adminsdk-fbsvc-96649b4b25.json
 # Gemini related files
 gemini-*.md
 *.backup
+app/services/simulation_service.
