@@ -170,7 +170,7 @@ etf-portfolio-api/
 │   ├── config.py              # Configuration management
 │   ├── constants.py           # Global constants
 │   ├── dependencies.py        # Dependency injection
-│   │   └── schemas.py             # Pydantic models
+│   ├── schemas.py             # Pydantic models
 │   └── main.py                # FastAPI application setup
 ├── static/                     # Static files (JavaScript)
 │   ├── api.js                 # API communication layer
@@ -179,7 +179,7 @@ etf-portfolio-api/
 │   ├── ui.js                  # UI manipulation
 │   ├── theme.js               # Dark/light theme switching
 │   └── jwt-decode.min.js      # JWT decoding library
-├── templates/
+├── templates/                  # HTML templates
 │   └── index.html             # Main web interface
 ├── main.py                    # Application entry point
 ├── etf_list.csv               # ETF definitions database
@@ -237,7 +237,7 @@ etf-portfolio-api/
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | POST | `/save_portfolio` | Save portfolio configuration |
-| GET | `/list_portfolios` | List user\'s portfolios |
+| GET | `/list_portfolios` | List user's portfolios |
 | GET | `/load_portfolio/{id}` | Load portfolio by ID |
 | DELETE | `/delete_portfolio/{id}` | Delete portfolio |
 
@@ -250,34 +250,18 @@ curl -X GET "http://localhost:8000/portfolio/efficient_frontier?tickers=VTI&tick
 # Analyze custom portfolio
 curl -X POST "http://localhost:8000/portfolio/custom_metrics" \
   -H "Content-Type: application/json" \
-  -d 
-  {
-    "tickers": ["VTI", "BND", "GLD"],
-    "weights": {"VTI": 0.6, "BND": 0.3, "GLD": 0.1},
-    "period": "5y"
-  }
+  -d "{}\n  \"tickers\": [\"VTI\", \"BND\", \"GLD\"],\n  \"weights\": {\"VTI\": 0.6, \"BND\": 0.3, \"GLD\": 0.1},\n  \"period\": \"5y\"\n}"
 
 # Register user
 curl -X POST "http://localhost:8000/register" \
   -H "Content-Type: application/json" \
-  -d 
-  {
-    "username": "testuser",
-    "password": "SecurePass123"
-  }
+  -d "{}\n  \"username\": \"testuser\",\n  \"password\": \"SecurePass123\"\n}"
 
 # Login and save portfolio (with JWT token)
 curl -X POST "http://localhost:8000/save_portfolio" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  -d 
-  {
-    "name": "My Portfolio",
-    "content": {
-      "selectedTickers": ["VTI", "BND"],
-      "weights": {"VTI": 0.6, "BND": 0.4}
-    }
-  }
+  -d "{}\n  \"name\": \"My Portfolio\",\n  \"content\": {\n    \"selectedTickers\": [\"VTI\", \"BND\"],\n    \"weights\": {\"VTI\": 0.6, \"BND\": 0.4}\n  }\n}"
 ```
 
 ---
@@ -399,7 +383,7 @@ The application supports two authentication methods:
 
 ### JWT Token Management
 
-- Access tokens stored in browser\'s `localStorage`
+- Access tokens stored in browser's `localStorage`
 - Tokens automatically included in API requests via `Authorization: Bearer` header
 - Token expiration handled client-side with automatic logout
 
@@ -453,7 +437,7 @@ Data Layer (yfinance, cache, database)
 ```
 
 **Key Design Principles:**
-- **Dependency Injection**: Services injected via FastAPI\'s `Depends()`
+- **Dependency Injection**: Services injected via FastAPI's `Depends()`
 - **Single Responsibility**: Each layer has a clear purpose
 - **Type Safety**: Pydantic models throughout
 - **Caching**: Automatic caching of expensive operations
@@ -558,7 +542,7 @@ pytest tests/test_portfolio.py -v
 
 ### Google Cloud Run (Alternative)
 
-1. **Create Dockerfile** (you\'ll need to create this)
+1. **Create Dockerfile** (you'll need to create this)
    ```dockerfile
    FROM python:3.9-slim
 
@@ -622,9 +606,59 @@ Contributions are welcome! Please follow these guidelines:
 
 ---
 
+## ⚠️ Disclaimer / 免責事項
+
+### English
+
+**IMPORTANT: This application is provided for educational and informational purposes only.**
+
+- **Not Financial Advice**: The information, analysis, and tools provided by this application do NOT constitute financial, investment, trading, or any other type of professional advice.
+- **No Investment Recommendations**: This application does not provide personalized investment recommendations. Any portfolio suggestions or optimizations are based solely on historical data and mathematical models.
+- **Past Performance**: Historical performance data and simulations do not guarantee future results. Investment returns can be volatile and unpredictable.
+- **Use at Your Own Risk**: You acknowledge that any investment decisions made based on information from this application are made at your sole discretion and risk.
+- **No Liability**: The developers, contributors, and operators of this application shall not be liable for any direct, indirect, incidental, special, consequential, or exemplary damages, including but not limited to:
+  - Loss of profits
+  - Loss of capital
+  - Trading losses
+  - Opportunity costs
+  - Data inaccuracies
+  - System errors or downtime
+- **Data Accuracy**: While we strive to provide accurate data through Yahoo Finance integration, we cannot guarantee the accuracy, completeness, or timeliness of any information.
+- **Consult Professionals**: Before making any investment decisions, you should consult with qualified financial advisors, tax professionals, and legal counsel.
+- **Regulatory Compliance**: Users are responsible for ensuring their use of this application complies with all applicable laws and regulations in their jurisdiction.
+
+**BY USING THIS APPLICATION, YOU ACKNOWLEDGE THAT YOU HAVE READ, UNDERSTOOD, AND AGREE TO THIS DISCLAIMER.**
+
+---
+
+### 日本語
+
+**重要: このアプリケーションは教育および情報提供のみを目的として提供されています。**
+
+- **金融アドバイスではありません**: 本アプリケーションが提供する情報、分析、ツールは、金融、投資、取引、その他いかなる種類の専門的アドバイスも構成するものではありません。
+- **投資推奨ではありません**: 本アプリケーションは個別の投資推奨を提供するものではありません。ポートフォリオの提案や最適化は、過去のデータと数学的モデルのみに基づいています。
+- **過去の実績**: 過去のパフォーマンスデータやシミュレーションは、将来の結果を保証するものではありません。投資リターンは変動性が高く、予測不可能です。
+- **自己責任での使用**: 本アプリケーションからの情報に基づいて行われる投資判断は、すべてあなた自身の裁量とリスクで行われることを承認します。
+- **免責事項**: 本アプリケーションの開発者、貢献者、運営者は、以下を含むがこれに限定されない、直接的、間接的、偶発的、特別、結果的、または懲罰的損害について一切の責任を負いません:
+  - 利益の損失
+  - 資本の損失
+  - 取引損失
+  - 機会損失
+  - データの不正確性
+  - システムエラーまたはダウンタイム
+- **データの正確性**: Yahoo Financeとの連携により正確なデータを提供するよう努めていますが、情報の正確性、完全性、適時性を保証することはできません。
+- **専門家への相談**: 投資判断を行う前に、資格を持つファイナンシャルアドバイザー、税理士、法律顧問に相談してください。
+- **規制遵守**: ユーザーは、本アプリケーションの使用が自身の管轄区域におけるすべての適用法令に準拠していることを確認する責任を負います。
+
+**本アプリケーションを使用することにより、あなたはこの免責事項を読み、理解し、同意したことを認めます。**
+
+---
+
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+**Note**: The MIT License applies to the software code itself. The disclaimer above applies to the use of the application and any financial analysis or recommendations it may provide.
 
 ---
 

@@ -1,0 +1,3 @@
+# Global Constants
+
+TRADING_DAYS_PER_YEAR = 252

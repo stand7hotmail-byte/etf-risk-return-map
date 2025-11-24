@@ -1,9 +1,10 @@
 from typing import List, Dict
+from app.schemas import EfficientFrontierPoint
 
 
 def filter_efficient_frontier(
-    efficient_frontier_points: List[Dict[str, float]]
-) -> List[Dict[str, float]]:
+    efficient_frontier_points: List[EfficientFrontierPoint]
+) -> List[EfficientFrontierPoint]:
     """
     Filters the efficient frontier points to create a smooth, non-decreasing curve.
 
@@ -33,7 +34,7 @@ def filter_efficient_frontier(
     # Sort by risk ascending, then by return descending for same risk
     sorted_points = sorted(
         efficient_frontier_points,
-        key=lambda x: (x["Risk"], -x["Return"])
+        key=lambda x: (x.Risk, -x.Return)
     )
 
     filtered_frontier = [sorted_points[0]]  # Start with lowest risk point
@@ -42,8 +43,8 @@ def filter_efficient_frontier(
         last_point = filtered_frontier[-1]
         
         # Only add if risk increases AND return doesn't decrease
-        if (current_point["Risk"] > last_point["Risk"] and 
-            current_point["Return"] >= last_point["Return"]):
+        if (current_point.Risk > last_point.Risk and 
+            current_point.Return >= last_point.Return):
             filtered_frontier.append(current_point)
         # Skip points with same risk (we already have the best one due to sort)
 

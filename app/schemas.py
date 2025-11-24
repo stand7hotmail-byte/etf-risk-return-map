@@ -91,3 +91,41 @@ class FutureDcaSimulationRequest(BaseModel):
     investment_amount: float
     frequency: str
     years: int
+
+
+class ETFData(BaseModel):
+    """Schema for individual ETF data."""
+    Ticker: str
+    Return: float
+    Risk: float
+
+
+class EfficientFrontierPoint(BaseModel):
+    """Schema for a point on the efficient frontier."""
+    Return: float
+    Risk: float
+
+
+class TangencyPortfolio(BaseModel):
+    """Schema for tangency portfolio details."""
+    Return: float
+    Risk: float
+    SharpeRatio: float
+
+
+class OptimizationResult(BaseModel):
+    """Schema for the result of efficient frontier calculation."""
+    etf_data: list[ETFData]
+    frontier_points: list[EfficientFrontierPoint]
+    tangency_portfolio: TangencyPortfolio | None
+    tangency_portfolio_weights: dict[str, float]
+
+
+class PortfolioMetrics(BaseModel):
+    """Schema for portfolio metrics."""
+    Risk: float
+    Return: float
+    SortinoRatio: float | None = None
+    weights: dict[str, float] | None = None
+    error: str | None = None
+    details: str | None = None
