@@ -1,160 +1,122 @@
+// -*- coding: utf-8 -*-
+/**
+ * API utility module for making authenticated and unauthenticated requests.
+ */
 
-// Handles all communication with the backend API
+// Base URL for the API (assuming it's on the same host)
+const API_BASE_URL = ''; // Relative path, e.g., /api
 
-// Helper to get auth headers
-function getAuthHeaders() {
-    const accessToken = localStorage.getItem('access_token');
-    const headers = { 'Content-Type': 'application/json' };
-    if (accessToken) {
-        headers['Authorization'] = `Bearer ${accessToken}`;
+/**
+ * Handles HTTP responses, checking for errors.
+ * @param {Response} response - The fetch API response object.
+ * @returns {Promise<any>} - The JSON response data.
+ * @throws {Error} If the response is not OK.
+ */
+async function handleResponse(response) {
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.detail || response.statusText;
+        throw new Error(`API Error: ${response.status} - ${errorMessage}`);
     }
-    return headers;
+    return response.json();
 }
 
-// Generic fetch wrapper
-async function post(url, data) {
-    const response = await fetch(url, {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        body: JSON.stringify(data)
+/**
+ * Fetches data from the API.
+ * @param {string} endpoint - The API endpoint (e.g., "/api/brokers").
+ * @param {object} params - Query parameters.
+ * @param {string} [token] - Optional JWT token for authenticated requests.
+ * @returns {Promise<any>} - The JSON response data.
+ */
+export async function get(endpoint, params = {}, token = null) {
+    const url = new URL(`${API_BASE_URL}${endpoint}`, window.location.origin);
+    Object.keys(params).forEach(key => {
+        if (params[key] !== undefined && params[key] !== null) {
+            if (Array.isArray(params[key])) {
+                params[key].forEach(item => url.searchParams.append(key, item));
+            } else {
+                url.searchParams.append(key, params[key]);
+            }
+        }
     });
-    if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'An API error occurred');
+
+    const headers = {
+        'Content-Type': 'application/json',
+    };
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
     }
-    return response.json();
-}
 
-// --- Auth APIs ---
-export async function registerUser(username, password) {
-    return post('/register', { username, password });
-}
-
-export async function loginUser(username, password) {
-    const form_data = new URLSearchParams();
-    form_data.append('username', username);
-    form_data.append('password', password);
-
-    const response = await fetch('/token', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: form_data
+    const response = await fetch(url.toString(), {
+        method: 'GET',
+        headers: headers,
     });
-    if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Login failed');
+    return handleResponse(response);
+}
+
+/**
+ * Posts data to the API.
+ * @param {string} endpoint - The API endpoint.
+ * @param {object} data - The data to send in the request body.
+ * @param {string} [token] - Optional JWT token.
+ * @returns {Promise<any>} - The JSON response data.
+ */
+export async function post(endpoint, data = {}, token = null) {
+    const headers = {
+        'Content-Type': 'application/json',
+    };
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
     }
-    return response.json();
+
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+        method: 'POST',
+        headers: headers,
+        body: JSON.stringify(data),
+    });
+    return handleResponse(response);
 }
 
-export async function loginGoogle(firebaseToken) {
-    return post('/token/google', { token: firebaseToken });
-}
-
-// --- Portfolio APIs ---
-export async function savePortfolio(name, content) {
-    return post('/save_portfolio', { name, content });
-}
-
-export async function listPortfolios() {
-    const response = await fetch('/list_portfolios', { headers: getAuthHeaders() });
-    if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Failed to list portfolios');
+/**
+ * Puts data to the API.
+ * @param {string} endpoint - The API endpoint.
+ * @param {object} data - The data to send in the request body.
+ * @param {string} [token] - Optional JWT token.
+ * @returns {Promise<any>} - The JSON response data.
+ */
+export async function put(endpoint, data = {}, token = null) {
+    const headers = {
+        'Content-Type': 'application/json',
+    };
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
     }
-    return response.json();
+
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+        method: 'PUT',
+        headers: headers,
+        body: JSON.stringify(data),
+    });
+    return handleResponse(response);
 }
 
-export async function loadPortfolio(id) {
-    const response = await fetch(`/load_portfolio/${id}`, { headers: getAuthHeaders() });
-    if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Failed to load portfolio');
+/**
+ * Deletes data via the API.
+ * @param {string} endpoint - The API endpoint.
+ * @param {string} [token] - Optional JWT token.
+ * @returns {Promise<any>} - The JSON response data.
+ */
+export async function del(endpoint, token = null) {
+    const headers = {
+        'Content-Type': 'application/json',
+    };
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
     }
-    return response.json();
-}
 
-export async function deletePortfolio(id) {
-    const response = await fetch(`/delete_portfolio/${id}`, {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         method: 'DELETE',
-        headers: getAuthHeaders()
+        headers: headers,
     });
-    if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Failed to delete portfolio');
-    }
-    return response.json();
-}
-
-// --- ETF Data APIs ---
-export async function getEtfList() {
-    const response = await fetch('/etfs/list');
-    return response.json();
-}
-
-export async function getRiskFreeRate() {
-    const response = await fetch('/etfs/risk_free_rate');
-    return response.json();
-}
-
-export async function getMapData(tickers, period) {
-    const queryParams = new URLSearchParams();
-    tickers.forEach(ticker => queryParams.append('tickers', ticker));
-    queryParams.append('period', period);
-
-    // Now only call efficient_frontier, which will return both etf_data and frontier_points
-    const response = await fetch(`/portfolio/efficient_frontier?${queryParams.toString()}`);
-    if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'An API error occurred while fetching map data');
-    }
-    const data = await response.json();
-    return { etfData: data.etf_data, frontierData: { frontier_points: data.frontier_points, tangency_portfolio: data.tangency_portfolio, tangency_portfolio_weights: data.tangency_portfolio_weights } };
-}
-
-export async function getCustomPortfolioData(tickers, weights, period) {
-    return post('/portfolio/custom_metrics', { tickers, weights, period });
-}
-
-export async function optimizePortfolio(url, tickers, target_value, period) {
-    return post(url, { tickers, target_value, period });
-}
-
-export async function getHistoricalPerformance(tickers, period) {
-    return post('/analysis/historical_performance', { tickers, period });
-}
-
-export async function runMonteCarlo(tickers, period, num_simulations, simulation_days) {
-    return post('/simulation/monte_carlo', { tickers, period, num_simulations, simulation_days });
-}
-
-export async function runDcaSimulation(tickers, weights, period, investment_amount, frequency) {
-    return post('/simulation/historical_dca', { tickers, weights, period, investment_amount, frequency });
-}
-
-export async function analyzeCsv(csv_data) {
-    return post('/analysis/csv', { csv_data });
-}
-
-export async function runFutureDcaSimulation(portfolioReturn, portfolioRisk, investmentAmount, frequency, years) {
-    return post('/simulation/future_dca', { 
-        portfolio_return: portfolioReturn, 
-        portfolio_risk: portfolioRisk, 
-        investment_amount: investmentAmount, 
-        frequency: frequency, 
-        years: years 
-    });
-}
-
-export async function getCorrelationMatrix(tickers, period) {
-    return post('/analysis/correlation_matrix', { tickers, period });
-}
-
-export async function getEtfDetails(ticker) {
-    const response = await fetch(`/etfs/details/${ticker}`);
-    if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Failed to fetch ETF details');
-    }
-    return response.json();
+    return handleResponse(response);
 }

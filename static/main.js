@@ -2,6 +2,7 @@ import * as api from './api.js';
 import * as ui from './ui.js';
 import { initAuth } from './auth.js';
 import { getCurrentTheme } from './theme.js';
+import * as analytics from './analytics.js'; // Import analytics module
 
 document.addEventListener('DOMContentLoaded', function() {
 
@@ -12,6 +13,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initialize authentication
     initAuth();
+
+    // Track initial page view
+    analytics.trackPageView("ETF Risk-Return Map Main Page");
 
     const etfSearchInput = document.getElementById('etf-search-input');
 
@@ -230,6 +234,9 @@ document.addEventListener('DOMContentLoaded', function() {
             const layout = { title: 'ETF Risk-Return Map (Annualized)', xaxis: { title: 'Risk (Annualized Volatility)' }, yaxis: { title: 'Expected Return (Annualized)' } };
             ui.drawMap(traces, layout);
 
+            // Track portfolio creation after successful map generation
+            analytics.trackPortfolioCreation(selectedTickers, selectedTickers.length);
+
         } catch (error) {
             console.error('Error generating map:', error);
             alert('Failed to generate map. See console for details.');
@@ -294,8 +301,13 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // --- Event Listeners ---
-    ui.generateMapBtn.addEventListener('click', () => generateMap());
     ui.calculateCustomPortfolioBtn.addEventListener('click', calculateAndDrawCustomPortfolio);
+
+    ui.generateMapBtn.addEventListener('click', () => {
+        const selectedTickers = Array.from(ui.etfCheckboxesDiv.querySelectorAll('input[type="checkbox"]:checked'))
+                                    .map(checkbox => checkbox.value);
+        generateMap(() => showBrokerRecommendations(selectedTickers));
+    });
 
     ui.portfolioSlidersDiv.addEventListener('input', (event) => {
         if (event.target.type === 'range') {
@@ -304,6 +316,87 @@ document.addEventListener('DOMContentLoaded', function() {
             ui.updateSliderPercentage(ticker, event.target.value);
         }
     });
+
+
+    // --- Broker Recommendation Logic ---
+
+    /**
+     * Detects user's likely region based on browser language.
+     * @returns {string} The detected region code (e.g., "US", "JP"). Defaults to "US".
+     */
+    function detectUserRegion() {
+        const lang = navigator.language || navigator.userLanguage;
+        if (lang.startsWith('ja')) return 'JP';
+        // Add more regions here if needed
+        return 'US'; // Default to US
+    }
+
+    /**
+     * Fetches and displays broker recommendations based on selected ETFs.
+     * @param {string[]} selectedTickers - An array of the selected ETF tickers.
+     */
+    async function showBrokerRecommendations(selectedTickers) {
+        if (!selectedTickers || selectedTickers.length === 0) {
+            // Hide the recommendation section if no ETFs are selected
+            const recommendationContainer = document.getElementById('broker-recommendation');
+            if(recommendationContainer) recommendationContainer.style.display = 'none';
+            return;
+        }
+
+        try {
+            const params = {
+                region: detectUserRegion(),
+                etfs: selectedTickers
+                // user_level could be added here if we collect that info
+            };
+            const recommendedBrokers = await api.get('/api/brokers/recommend', params);
+            
+            ui.displayBrokerRecommendations(recommendedBrokers);
+
+        } catch (error) {
+            console.error('Failed to load broker recommendations:', error);
+            const recommendationContainer = document.getElementById('broker-recommendation');
+            if(recommendationContainer) recommendationContainer.style.display = 'none';
+        }
+    }
+    
+    // Delegated event listener for dynamically created affiliate links in recommendations
+    const mainContent = document.getElementById('main-content');
+    mainContent.addEventListener('click', async (event) => {
+        const affiliateLink = event.target.closest('.affiliate-link');
+        if (affiliateLink && affiliateLink.closest('#recommended-brokers-list')) {
+            event.preventDefault();
+            const brokerId = affiliateLink.dataset.brokerId;
+            const placement = affiliateLink.dataset.placement;
+            
+            // Get current portfolio for context
+            const selectedTickers = Array.from(ui.etfCheckboxesDiv.querySelectorAll('input[type="checkbox"]:checked'))
+                                       .map(checkbox => checkbox.value);
+            const portfolioContext = {
+                tickers: selectedTickers,
+                weights: currentWeights, // Assuming currentWeights is up-to-date
+            };
+
+            try {
+                const response = await api.post('/api/brokers/track-click', {
+                    broker_id: parseInt(brokerId),
+                    placement: placement,
+                    portfolio_data: portfolioContext
+                });
+                
+                if (response.success && response.redirect_url) {
+                    window.location.href = response.redirect_url;
+                } else {
+                    // Fallback to a direct link if tracking fails but we can find the broker info
+                    console.error('Click tracking failed or no redirect URL provided.');
+                }
+            } catch (error) {
+                console.error('Error tracking affiliate click:', error);
+                // Consider a fallback redirect here as well
+            }
+        }
+    });
+
 
 
 

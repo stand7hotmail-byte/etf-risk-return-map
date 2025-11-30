@@ -12,6 +12,15 @@
     <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
     <script src="/static/jwt-decode.min.js"></script>
     
+    <!-- Google Analytics 4 -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-XXXXXXXXXX');
+    </script>
+    
     <style>
         body {
             background-color: var(--bs-secondary-bg);
@@ -48,13 +57,32 @@
         <!-- Navbar -->
         <nav class="navbar navbar-expand-lg bg-dark navbar-dark shadow-sm">
             <div class="container-fluid">
-                <a class="navbar-brand" href="#"><i class="bi bi-bullseye me-2"></i>ETF Risk-Return Map</a>
-                <div class="d-flex ms-auto align-items-center">
-                    <button class="btn btn-outline-light btn-sm me-2" id="theme-toggler" type="button">
-                        <i class="bi bi-sun-fill"></i>
-                    </button>
-                    <div id="auth-controls">
-                        <!-- Auth buttons will be dynamically inserted here by auth.js -->
+                <a class="navbar-brand" href="/"><i class="bi bi-bullseye me-2"></i>ETF Risk-Return Map</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" 
+                        data-bs-target="#navbarNav" aria-controls="navbarNav" 
+                        aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav me-auto">
+                        <li class="nav-item">
+                            <a class="nav-link" href="/brokers">
+                                <i class="bi bi-bank me-1"></i>証券会社比較
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/docs" target="_blank">
+                                <i class="bi bi-file-text me-1"></i>API Docs
+                            </a>
+                        </li>
+                    </ul>
+                    <div class="d-flex ms-auto align-items-center">
+                        <button class="btn btn-outline-light btn-sm me-2" id="theme-toggler" type="button">
+                            <i class="bi bi-sun-fill"></i>
+                        </button>
+                        <div id="auth-controls">
+                            <!-- Auth buttons will be dynamically inserted here by auth.js -->
+                        </div>
                     </div>
                 </div>
             </div>
@@ -209,6 +237,33 @@
                                 <div id="portfolio-composition">
                                     <h5 class="card-title">Max Sharpe Ratio Portfolio Composition</h5>
                                     <div id="composition-details">Select ETFs and click 'Generate Map' to see composition.</div>
+                                </div>
+                                <div id="broker-recommendation" class="card mt-4 border-primary" style="display: none;">
+                                    <div class="card-header bg-primary text-white">
+                                        <h5 class="mb-0">
+                                            <i class="bi bi-rocket-takeoff me-2"></i>
+                                            このポートフォリオを実際に運用する
+                                        </h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <p class="lead">
+                                            分析したポートフォリオで実際に投資を始めてみませんか？
+                                        </p>
+                                        <p class="text-muted small">
+                                            以下の証券会社では、選択したETFを低コストで取引できます。
+                                        </p>
+
+                                        <div id="recommended-brokers-list" class="row">
+                                            <!-- JavaScriptで動的に生成 -->
+                                        </div>
+
+                                        <hr>
+                                        <p class="text-muted small mb-0">
+                                            <i class="bi bi-info-circle me-1"></i>
+                                            これらは当サイトが提携する証券会社です。口座開設により当サイトに報酬が発生する場合がありますが、
+                                            あなたに追加費用は一切かかりません。
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
                         </div>

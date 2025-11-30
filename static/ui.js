@@ -50,8 +50,67 @@ export const savedPortfoliosSelect = document.getElementById('saved-portfolios-s
 export const loadPortfolioBtn = document.getElementById('load-portfolio-btn');
 export const deletePortfolioBtn = document.getElementById('delete-portfolio-btn');
 export const portfolioMessageDiv = document.getElementById('portfolio-message');
+export const recommendedBrokersList = document.getElementById('recommended-brokers-list');
 
 // --- UI Functions ---
+
+/**
+ * Creates an HTML element for a single broker card for the recommendation section.
+ * @param {object} broker - Broker data.
+ * @returns {HTMLElement} - The created card element.
+ */
+function createBrokerCard(broker) {
+    const card = document.createElement('div');
+    card.className = 'col-md-4 mb-3 d-flex'; // Use flexbox for equal height cards
+
+    card.innerHTML = `
+        <div class="card h-100">
+            <div class="card-body d-flex flex-column">
+                <h6 class="card-title">${broker.display_name}</h6>
+                <div class="mb-2">
+                    ${JSON.parse(broker.pros).slice(0, 2).map(p => `<span class="badge bg-secondary-subtle text-secondary me-1 mb-1">${p}</span>`).join('')}
+                </div>
+                <p class="card-text small flex-grow-1"><strong>最適な人:</strong> ${broker.best_for}</p>
+                <a href="#" class="btn btn-sm btn-outline-primary mt-auto affiliate-link"
+                   data-broker-id="${broker.id}" data-placement="portfolio_recommendation">
+                    詳細を見る
+                    <span class="badge bg-info ms-1">AD</span>
+                </a>
+            </div>
+        </div>
+    `;
+
+    // Note: The event listener for tracking clicks will be attached in main.js
+    // to have access to the portfolio data context.
+    return card;
+}
+
+
+/**
+ * Renders the recommended brokers into the recommendation section.
+ * @param {Array} brokers - An array of broker objects to display.
+ */
+export function displayBrokerRecommendations(brokers) {
+    if (!recommendedBrokersList) return;
+
+    recommendedBrokersList.innerHTML = '';
+    const recommendationContainer = document.getElementById('broker-recommendation');
+
+    if (brokers.length > 0) {
+        brokers.slice(0, 3).forEach(broker => {
+            const card = createBrokerCard(broker);
+            recommendedBrokersList.appendChild(card);
+        });
+        recommendationContainer.style.display = 'block';
+
+        // Add a fade-in animation
+        recommendationContainer.classList.add('fade-in');
+        setTimeout(() => recommendationContainer.classList.remove('fade-in'), 500);
+    } else {
+        recommendationContainer.style.display = 'none';
+    }
+}
+
 
 export function createEtfCheckboxes(etfList, definitions, container, currentlyChecked) {
     container.innerHTML = '';

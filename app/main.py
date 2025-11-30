@@ -8,7 +8,7 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 
-from app.api import analysis, etf, portfolio, simulation
+from app.api import analysis, etf, portfolio, simulation, affiliate, admin
 from app.config import get_settings
 
 
@@ -63,10 +63,12 @@ async def value_error_exception_handler(request: Request, exc: ValueError):
 
 
 # --- API Routers ---
+app.include_router(analysis.router)
 app.include_router(etf.router)
 app.include_router(portfolio.router)
 app.include_router(simulation.router)
-app.include_router(analysis.router)
+app.include_router(affiliate.router)
+app.include_router(admin.router)
 
 # The root path can still serve the main page, but this logic belongs in the root main.py
 # that serves the entire application, not in the app module itself.
