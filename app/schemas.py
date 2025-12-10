@@ -220,6 +220,12 @@ class PlacementPerformanceStats(BaseModel):
     conversions: int
     conversion_rate: float
 
+class DailyPerformanceStats(BaseModel):
+    """Schema for daily performance statistics."""
+    date: str
+    clicks: int
+    conversions: int
+
 class AffiliateStatsResponse(BaseModel):
     """Schema for overall affiliate statistics response."""
     period: AffiliatePeriodStats
@@ -229,6 +235,7 @@ class AffiliateStatsResponse(BaseModel):
     estimated_revenue: float
     by_broker: List[BrokerPerformanceStats]
     by_placement: List[PlacementPerformanceStats]
+    daily_performance: List[DailyPerformanceStats]
 
 class TopPerformingBroker(BaseModel):
     """Schema for a top performing broker."""
