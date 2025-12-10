@@ -48,7 +48,7 @@ async function fetchBrokers(region) {
     showLoadingSpinner(true);
     try {
         const response = await api.get('/api/brokers', { region: region, active_only: true });
-        return response.brokers; // Assuming the API returns { brokers: [...] }
+        return response; // Corrected: API returns a list directly, not an object with a "brokers" key
     } catch (error) {
         console.error('Error fetching brokers:', error);
         // Display an error message to the user
@@ -77,7 +77,7 @@ function createBrokerCard(broker) {
             </div>
             <p class="text-muted small">${broker.description}</p>
             <div class="mb-2">
-                ${JSON.parse(broker.pros).map(p => `<span class="badge bg-success-subtle text-success me-1 mb-1">${p}</span>`).join('')}
+                ${broker.pros.map(p => `<span class="badge bg-success-subtle text-success me-1 mb-1">${p}</span>`).join('')}
             </div>
             <p class="small"><strong>最適な人:</strong> ${broker.best_for}</p>
             <p class="small"><strong>評価:</strong> ${'⭐'.repeat(Math.round(broker.rating))} (${broker.rating})</p>
@@ -121,7 +121,7 @@ function createBrokerTableRow(broker) {
             ${broker.display_name}
         </td>
         <td>${broker.commission_rate > 0 ? `${broker.commission_rate} ${broker.region === 'JP' ? '円' : '$'}` : '要確認'}</td>
-        <td>${JSON.parse(broker.pros).length}+</td> <!-- Assuming pros roughly indicates feature count -->
+        <td>${broker.pros.length}+</td> <!-- Assuming pros roughly indicates feature count -->
         <td>${broker.best_for}</td>
         <td>${'⭐'.repeat(Math.round(broker.rating))}</td>
         <td>
@@ -226,24 +226,6 @@ function sortBrokers(sortBy) {
     });
 }
 
-/**
- * Sets up all event listeners for the page.
- */
-function setupEventListeners() {
-    regionTabsContainer.addEventListener('click', handleRegionTabClick);
-
-    // Setup sortable table headers
-    const sortableHeaders = brokerComparisonTable.querySelectorAll('th[data-sort-by]');
-    sortableHeaders.forEach(header => {
-        header.style.cursor = 'pointer';
-        header.addEventListener('click', () => {
-            const sortBy = header.dataset.sortBy;
-            if (sortBy) {
-                sortBrokers(sortBy);
-            }
-        });
-    });
-}
 /**
  * Sets up all event listeners for the page.
  */
