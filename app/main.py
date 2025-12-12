@@ -70,6 +70,14 @@ app.include_router(simulation.router)
 app.include_router(affiliate.router)
 app.include_router(admin.router)
 
+
+@app.get("/version", tags=["Monitoring"])
+async def get_version():
+    """
+    Returns the current version of the application.
+    """
+    return {"app_name": settings.app_name, "app_version": settings.app_version}
+
 # The root path can still serve the main page, but this logic belongs in the root main.py
 # that serves the entire application, not in the app module itself.
 # @app.get("/")

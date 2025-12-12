@@ -26,6 +26,7 @@ class Settings(BaseSettings):
     Application settings loaded from environment variables.
     """
     app_name: str = "ETF Portfolio Analysis API"
+    app_version: str = "0.1.0"
     risk_free_rate: float = 0.02
     cache_ttl_seconds: int = 3600
     project_id: str = ""
