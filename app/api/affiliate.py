@@ -4,6 +4,7 @@ API endpoints for managing and interacting with affiliate brokers and tracking c
 """
 import json
 from typing import List, Optional
+from datetime import datetime # Added missing import
 
 from app.db.database import get_db
 from app.models.affiliate import AffiliateBroker, AffiliateClick
