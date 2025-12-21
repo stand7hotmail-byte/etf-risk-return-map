@@ -25,6 +25,20 @@ class Settings(BaseSettings):
     """
     Application settings loaded from environment variables.
     """
+    # .env file fields
+    database_url: str
+    secret_key: str
+    algorithm: str
+    access_token_expire_minutes: int
+    ga_measurement_id: str = ""
+    affiliate_ibkr_url: str = ""
+    affiliate_schwab_url: str = ""
+    affiliate_fidelity_url: str = ""
+    affiliate_rakuten_url: str = ""
+    affiliate_sbi_url: str = ""
+    affiliate_monex_url: str = ""
+
+    # Existing fields with default values
     app_name: str = "ETF Portfolio Analysis API"
     app_version: str = "0.1.0"
     risk_free_rate: float = 0.02
