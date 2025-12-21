@@ -6,14 +6,11 @@ import numpy as np
 import pandas as pd
 import pytest
 
-with mock.patch("google.cloud.secretmanager.SecretManagerServiceClient"):
-    from main import (
-        RISK_FREE_RATE,
-        portfolio_return,
-        portfolio_sharpe_ratio,
-        portfolio_volatility,
-    )
+from app.config import RISK_FREE_RATE
+from app.models.portfolio import PortfolioCalculator
 
+with mock.patch("google.cloud.secretmanager.SecretManagerServiceClient"):
+    pass # This block is now empty or can be removed if not needed for other mocks
 @pytest.fixture
 def mock_data() -> dict:
     """Provide mock data for testing calculation functions."""
@@ -37,16 +34,14 @@ def mock_data() -> dict:
     }
 
 def test_portfolio_return(mock_data: dict) -> None:
-    """Tests the portfolio_return function."""
-    p_return = portfolio_return(mock_data["weights"], mock_data["avg_returns"])
-
+    """Tests the PortfolioCalculator.calculate_portfolio_return method."""
+    p_return = PortfolioCalculator.calculate_portfolio_return(mock_data["weights"], mock_data["avg_returns"])
     # Expected: (0.1 + 0.2 + 0.15) / 3 = 0.45 / 3 = 0.15
     assert np.isclose(p_return, 0.15)
 
 def test_portfolio_volatility(mock_data: dict) -> None:
-    """Tests the portfolio_volatility function."""
-    p_volatility = portfolio_volatility(mock_data["weights"], mock_data["cov_matrix"])
-
+    """Tests the PortfolioCalculator.calculate_portfolio_volatility method."""
+    p_volatility = PortfolioCalculator.calculate_portfolio_volatility(mock_data["weights"], mock_data["cov_matrix"])
     # Expected calculation:
     # w.T * C * w =
     # [1/3, 1/3, 1/3] * [[0.10, 0.02, 0.01], [0.02, 0.15, 0.03],
@@ -58,25 +53,22 @@ def test_portfolio_volatility(mock_data: dict) -> None:
     assert np.isclose(p_volatility, expected_volatility)
 
 def test_portfolio_sharpe_ratio(mock_data: dict) -> None:
-    """Tests the portfolio_sharpe_ratio function."""
-    p_return = portfolio_return(mock_data["weights"], mock_data["avg_returns"])
-    p_volatility = portfolio_volatility(mock_data["weights"], mock_data["cov_matrix"])
-
-    sharpe_ratio = portfolio_sharpe_ratio(
-        mock_data["weights"], mock_data["avg_returns"],
-        mock_data["cov_matrix"], RISK_FREE_RATE
+    """Tests the PortfolioCalculator.calculate_sharpe_ratio method."""
+    p_return = PortfolioCalculator.calculate_portfolio_return(mock_data["weights"], mock_data["avg_returns"])
+    p_volatility = PortfolioCalculator.calculate_portfolio_volatility(mock_data["weights"], mock_data["cov_matrix"])
+    sharpe_ratio = PortfolioCalculator.calculate_sharpe_ratio(
+        p_return, p_volatility, RISK_FREE_RATE
     )
-
     expected_sharpe = (p_return - RISK_FREE_RATE) / p_volatility
-
     assert np.isclose(sharpe_ratio, expected_sharpe)
 
 def test_portfolio_sharpe_ratio_zero_volatility(mock_data: dict) -> None:
     """Tests that sharpe ratio handles zero volatility."""
     zero_cov_matrix = pd.DataFrame(np.zeros((3,3)), columns=["ETF1", "ETF2", "ETF3"])
-    sharpe_ratio = portfolio_sharpe_ratio(
-        mock_data["weights"], mock_data["avg_returns"],
-        zero_cov_matrix, RISK_FREE_RATE
+    p_return = PortfolioCalculator.calculate_portfolio_return(mock_data["weights"], mock_data["avg_returns"])
+    p_volatility = PortfolioCalculator.calculate_portfolio_volatility(mock_data["weights"], zero_cov_matrix)
+    sharpe_ratio = PortfolioCalculator.calculate_sharpe_ratio(
+        p_return, p_volatility, RISK_FREE_RATE
     )
 
     # Should return -inf as per the function's logic to avoid division by zero

@@ -190,28 +190,28 @@ document.addEventListener('DOMContentLoaded', function() {
         const period = ui.dataPeriodSelect.value;
 
         try {
-            const { etfData, frontierData } = await api.getMapData(selectedTickers, period);
+            const { etf_data, frontier_points, tangency_portfolio, tangency_portfolio_weights } = await api.getMapData(selectedTickers, period);
             const riskFreeRateData = await api.getRiskFreeRate();
             
-            if (frontierData.error) {
-                alert(frontierData.error);
+            if (frontier_points.error) {
+                alert(frontier_points.error);
                 return;
             }
 
             const traces = [];
             // Add ETF trace
             traces.push({
-                x: etfData.map(item => item.Risk),
-                y: etfData.map(item => item.Return),
+                x: etf_data.map(item => item.Risk),
+                y: etf_data.map(item => item.Return),
                 mode: 'markers+text', type: 'scatter', name: 'ETFs',
-                text: etfData.map(item => item.Ticker), textposition: 'top center',
+                text: etf_data.map(item => item.Ticker), textposition: 'top center',
                 marker: { size: 12 }
             });
 
             // Add Efficient Frontier trace
             traces.push({
-                x: frontierData.frontier_points.map(item => item.Risk),
-                y: frontierData.frontier_points.map(item => item.Return),
+                x: frontier_points.map(item => item.Risk),
+                y: frontier_points.map(item => item.Return),
                 mode: 'lines', type: 'scatter', name: 'Efficient Frontier',
                 line: { color: 'blue', width: 2, shape: 'spline' } // Use spline for smoothing
             });
@@ -220,13 +220,12 @@ document.addEventListener('DOMContentLoaded', function() {
             const riskFreeRate = riskFreeRateData.risk_free_rate;
             traces.push({ x: [0], y: [riskFreeRate], mode: 'markers', type: 'scatter', name: 'Risk-Free Rate', marker: { size: 20, color: 'green', symbol: 'star' } });
 
-            const tangencyPortfolio = frontierData.tangency_portfolio;
-            if (tangencyPortfolio) {
+            if (tangency_portfolio) {
                 // Add CML trace
-                traces.push({ x: [0, tangencyPortfolio.Risk], y: [riskFreeRate, tangencyPortfolio.Return], mode: 'lines', type: 'scatter', name: 'Capital Market Line', line: { color: 'red', width: 2, dash: 'dash' } });
+                traces.push({ x: [0, tangency_portfolio.Risk], y: [riskFreeRate, tangency_portfolio.Return], mode: 'lines', type: 'scatter', name: 'Capital Market Line', line: { color: 'red', width: 2, dash: 'dash' } });
                 // Add Max Sharpe Portfolio trace
-                traces.push({ x: [tangencyPortfolio.Risk], y: [tangencyPortfolio.Return], mode: 'markers', type: 'scatter', name: 'Max Sharpe Ratio Portfolio', marker: { size: 15, color: 'darkorange', symbol: 'diamond' } });
-                ui.displayPortfolioComposition(frontierData.tangency_portfolio_weights);
+                traces.push({ x: [tangency_portfolio.Risk], y: [tangency_portfolio.Return], mode: 'markers', type: 'scatter', name: 'Max Sharpe Ratio Portfolio', marker: { size: 15, color: 'darkorange', symbol: 'diamond' } });
+                ui.displayPortfolioComposition(tangency_portfolio_weights);
             } else {
                 ui.displayPortfolioComposition({});
             }
@@ -376,6 +375,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 tickers: selectedTickers,
                 weights: currentWeights, // Assuming currentWeights is up-to-date
             };
+
+            console.log("Main JS: Affiliate link clicked!", {
+                brokerId: brokerId,
+                placement: placement,
+                portfolioContext: portfolioContext
+            }); // デバッグログ追加
 
             try {
                 const response = await api.post('/api/brokers/track-click', {

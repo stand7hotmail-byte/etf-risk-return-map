@@ -68,7 +68,7 @@ function createBrokerCard(broker) {
             <div class="card-body d-flex flex-column">
                 <h6 class="card-title">${broker.display_name}</h6>
                 <div class="mb-2">
-                    ${JSON.parse(broker.pros).slice(0, 2).map(p => `<span class="badge bg-secondary-subtle text-secondary me-1 mb-1">${p}</span>`).join('')}
+                    ${broker.pros.slice(0, 2).map(p => `<span class="badge bg-secondary-subtle text-secondary me-1 mb-1">${p}</span>`).join('')}
                 </div>
                 <p class="card-text small flex-grow-1"><strong>最適な人:</strong> ${broker.best_for}</p>
                 <a href="#" class="btn btn-sm btn-outline-primary mt-auto affiliate-link"

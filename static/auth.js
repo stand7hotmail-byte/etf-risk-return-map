@@ -1,7 +1,8 @@
 
 // Handles all authentication logic, including Firebase init and event listeners
 
-import { registerUser, loginUser, loginGoogle } from './api.js';
+import * as api from './api.js'; // Import generic API functions
+// import { registerUser, loginUser, loginGoogle } from './api.js'; // REMOVED: Incorrect import
 
 // --- Variables ---
 let accessToken = localStorage.getItem('access_token');
@@ -15,6 +16,39 @@ const logoutBtn = document.getElementById('logout-btn');
 const googleLoginBtn = document.getElementById('google-login-btn');
 const authMessageDiv = document.getElementById('auth-message');
 const loggedInUserDiv = document.getElementById('logged-in-user');
+
+
+// --- Authentication API Wrappers (Local to auth.js) ---
+
+async function registerUser(username, password) {
+    const response = await api.post('/register', { username, password });
+    return response;
+}
+
+async function loginUser(username, password) {
+    const data = new URLSearchParams();
+    data.append('username', username);
+    data.append('password', password);
+    // FastAPI's /token endpoint expects x-www-form-urlencoded
+    const response = await fetch('/token', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: data.toString(),
+    });
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Login failed');
+    }
+    return response.json();
+}
+
+async function loginGoogle(idToken) {
+    const response = await api.post('/token/google', { token: idToken });
+    return response;
+}
+
 
 // --- Private Functions ---
 

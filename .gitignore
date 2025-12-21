@@ -1,12 +1,47 @@
-# Python cache
-__pycache__/
-*.pyc
+# 環境変数
+.env
+.env.local
+.env.production
 
-# Database
+# データベース
+*.db
+*.sqlite
+*.sqlite3
+data/
 sql_app.db
 
-# Logs
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+.venv/
+env/
+ENV/
+*.pyc
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# ログ
+*.log
+logs/
 エラーログ.txt
+server.log
+server.err
+
+# 一時ファイル
+*.tmp
+*.bak
 
 # Secrets
 # Firebase service account key
@@ -15,10 +50,5 @@ etf-webapp-firebase-adminsdk-fbsvc-96649b4b25.json
 # Gemini related files
 gemini-*.md
 *.backup
-# Ignore generated data directory
-/data/
 # Ignore generated static blog files
 /static/blog/
-# Ignore server log files
-server.log
-server.err

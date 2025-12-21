@@ -1,8 +1,12 @@
+import os
 from functools import lru_cache
-from typing import Annotated
+from typing import Annotated, Generator
+from datetime import datetime, timedelta
 
-from fastapi import Depends, Request
-from slowapi import Limiter
+from fastapi import Depends, Request, HTTPException, status
+from fastapi.security import HTTPBearer, HTTPAuthCredentials
+from jose import JWTError, jwt
+
 from sqlalchemy.orm import Session
 
 from app.config import CACHE_TTL, ETF_DEFINITIONS, Settings, get_settings
@@ -13,6 +17,65 @@ from app.services.etf_service import ETFService
 from app.services.optimization_service import OptimizationService
 from app.services.simulation_service import SimulationService
 from app.utils.cache import CacheManager
+
+
+# --- JWT Configuration ---
+SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-change-in-production")
+ALGORITHM = os.getenv("ALGORITHM", "HS256")
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 30))
+
+security = HTTPBearer()
+
+def create_access_token(data: dict, expires_delta: timedelta = None):
+    """
+    JWTアクセス_トークンを作成
+    """
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.utcnow() + expires_delta
+    else:
+        expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    to_encode.update({"exp": expire})
+    
+    # is_admin フラグを含める
+    to_encode.update({"is_admin": data.get("is_admin", False)})
+    
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+def get_current_user(credentials: HTTPAuthCredentials = Depends(security)):
+    """
+    JWTトークンから現在のユーザーを取得
+    """
+    token = credentials.credentials
+    
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload.get("sub")
+        if username is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Could not validate credentials",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        return {"username": username, "is_admin": payload.get("is_admin", False)}
+    except JWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+def get_admin_user(current_user: dict = Depends(get_current_user)):
+    """
+    管理者権限を確認
+    """
+    if not current_user.get("is_admin", False):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required"
+        )
+    return current_user
 
 
 # --- Application Settings ---
@@ -155,3 +218,6 @@ DataServiceDep = Annotated[DataService, Depends(get_data_service)]
 ETFServiceDep = Annotated[ETFService, Depends(get_etf_service)]
 OptimizationServiceDep = Annotated[OptimizationService, Depends(get_optimization_service)]
 SimulationServiceDep = Annotated[SimulationService, Depends(get_simulation_service)]
+# current_userの型ヒント
+CurrentUser = Annotated[dict, Depends(get_current_user)]
+AdminUser = Annotated[dict, Depends(get_admin_user)]

@@ -35,7 +35,7 @@ async def brokers_page(request: Request):
     """
     Serves the broker comparison page.
     """
-    return templates.TemplateResponse("brokers.html", {"request": request})
+    return templates.TemplateResponse("brokers.html", {"request": request, "title": "ETF投資におすすめの証券会社"})
 
 
 @app.get("/admin/affiliate", response_class=HTMLResponse, tags=["Admin UI"])

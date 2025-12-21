@@ -123,12 +123,32 @@ A comprehensive FastAPI-based web application for ETF portfolio analysis, optimi
    pip install -r requirements.txt
    ```
 
-4. **Set up environment variables** (optional)
-   ```bash
-   # Create .env file
-   echo "RISK_FREE_RATE=0.02" > .env
-   echo "CACHE_TTL_SECONDS=3600" >> .env
-   ```
+4. **Set up environment variables**
+
+   1. `.env.example` をコピーして `.env` を作成:
+      ```bash
+      cp .env.example .env
+      ```
+
+   2. `.env` ファイルを編集して実際の値を設定:
+      ```bash
+      nano .env
+      ```
+
+   3. **重要**: `.env` ファイルは絶対にGitにコミットしないでください。
+
+   #### 必須の環境変数
+
+   - `SECRET_KEY`: JWT署名用のシークレットキー（最低32文字のランダムな文字列）
+     ```bash
+     # 生成方法
+     python -c "import secrets; print(secrets.token_urlsafe(32))"
+     ```
+
+   - `DATABASE_URL`: データベース接続URL
+     - 開発環境: `sqlite:///./data/affiliate.db`
+     - 本番環境: PostgreSQL等の接続文字列
+
 
 5. **Run the application**
    ```bash

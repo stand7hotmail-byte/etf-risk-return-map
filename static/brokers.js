@@ -6,7 +6,7 @@
 
 import * as api from './api.js'; // Assuming api.js provides fetch wrappers
 import * as theme from './theme.js'; // For theme-related functionalities
-import * as analytics from './analytics.js'; // Import analytics module
+// import * as analytics from './analytics.js'; // analytics.jsの代わりに新しい関数を実装
 
 // DOM Elements
 const brokerCardsContainer = document.getElementById('broker-cards-container');
@@ -17,251 +17,248 @@ const brokerComparisonTable = document.getElementById('broker-comparison-table')
 
 let allBrokers = []; // Stores all fetched brokers
 
-/**
- * Shows or hides the loading spinner.
- * @param {boolean} show - True to show, false to hide.
- */
-function showLoadingSpinner(show) {
-    if (loadingSpinner) {
-        loadingSpinner.style.display = show ? 'block' : 'none';
+async function handleAffiliateClick(event, broker, placement) {
+    event.preventDefault();
+
+    console.log('[Brokers] Affiliate link clicked:', {
+        broker: broker.broker_name,
+        placement: placement,
+        url: broker.affiliate_url
+    });
+
+    const trackingData = {
+        broker_id: broker.broker_id,
+        placement: placement,
+        portfolio_data: null
+    };
+
+    console.log('[Brokers] Sending tracking request:', trackingData);
+
+    const timeoutPromise = new Promise((resolve) => {
+        setTimeout(() => {
+            console.log('[Brokers] Tracking API timeout (2s), proceeding to redirect');
+            resolve({ timeout: true });
+        }, 2000);
+    });
+
+    const trackingPromise = fetch('/api/brokers/track-click', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(trackingData)
+    })
+    .then(response => {
+        console.log('[Brokers] Tracking API response status:', response.status);
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('[Brokers] Tracking API success:', data);
+        return { success: true, data };
+    })
+    .catch(error => {
+        console.error('[Brokers] Tracking API error:', error);
+        return { success: false, error: error.message };
+    });
+
+    const result = await Promise.race([trackingPromise, timeoutPromise]);
+
+    if (result.timeout) {
+        console.warn('[Brokers] Proceeding without tracking confirmation');
+    } else if (result.success) {
+        console.log('[Brokers] Tracking recorded successfully');
+    } else {
+        console.error('[Brokers] Tracking failed:', result.error);
     }
-}
 
-/**
- * Detects user's likely region based on browser language.
- * @returns {string} The detected region code (e.g., "US", "JP"). Defaults to "US".
- */
-function detectUserRegion() {
-    const lang = navigator.language || navigator.userLanguage;
-    if (lang.startsWith('ja')) return 'JP';
-    if (lang.startsWith('en')) return 'US'; // Default to US for English speakers
-    return 'US';
-}
-
-
-/**
- * Fetches broker data from the API.
- * @param {string} region - The region to filter brokers by (e.g., "US", "JP").
- * @returns {Promise<Array>} - A promise that resolves to an array of broker objects.
- */
-async function fetchBrokers(region) {
-    showLoadingSpinner(true);
-    try {
-        const response = await api.get('/api/brokers', { region: region, active_only: true });
-        return response; // Corrected: API returns a list directly, not an object with a "brokers" key
-    } catch (error) {
-        console.error('Error fetching brokers:', error);
-        // Display an error message to the user
-        brokerCardsContainer.innerHTML = `<div class="alert alert-danger" role="alert">
-            証券会社情報の取得中にエラーが発生しました。しばらくしてからもう一度お試しください。
-        </div>`;
-        return [];
-    } finally {
-        showLoadingSpinner(false);
-    }
-}
-
-/**
- * Creates an HTML element for a single broker card.
- * @param {object} broker - Broker data.
- * @returns {HTMLElement} - The created card element.
- */
-function createBrokerCard(broker) {
-    const card = document.createElement('div');
-    card.className = 'col-md-6 col-lg-4 d-flex'; // Flex to ensure equal height cards
-    card.innerHTML = `
-        <div class="broker-card flex-fill">
-            <div class="d-flex align-items-center mb-2">
-                ${broker.logo_url ? `<img src="${broker.logo_url}" alt="${broker.display_name} logo" class="me-2">` : `<i class="bi bi-bank fs-3 me-2"></i>`}
-                <h5 class="card-title mb-0">${broker.display_name}</h5>
-            </div>
-            <p class="text-muted small">${broker.description}</p>
-            <div class="mb-2">
-                ${broker.pros.map(p => `<span class="badge bg-success-subtle text-success me-1 mb-1">${p}</span>`).join('')}
-            </div>
-            <p class="small"><strong>最適な人:</strong> ${broker.best_for}</p>
-            <p class="small"><strong>評価:</strong> ${'⭐'.repeat(Math.round(broker.rating))} (${broker.rating})</p>
-            <a href="#" class="btn btn-primary btn-sm mt-auto affiliate-link" 
-               data-broker-id="${broker.id}" data-placement="broker_page">
-                口座開設する（無料）
-                <span class="badge bg-info ms-1">AD</span>
-            </a>
-        </div>
-    `;
-    const affiliateLink = card.querySelector('.affiliate-link');
-    if (affiliateLink) {
-        affiliateLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            analytics.trackAffiliateClick(broker, 'broker_page')
-                .then(response => {
-                    if (response.redirect_url) {
-                        window.location.href = response.redirect_url;
-                    } else {
-                        window.location.href = broker.affiliate_url; // Fallback to direct URL
-                    }
-                })
-                .catch(() => {
-                    window.location.href = broker.affiliate_url; // Fallback on error
-                });
+    if (typeof gtag !== 'undefined') {
+        console.log('[Brokers] Sending GA4 event');
+        gtag('event', 'affiliate_click', {
+            'broker_name': broker.broker_name,
+            'broker_region': broker.region,
+            'placement': placement,
+            'event_category': 'affiliate'
         });
     }
+
+    console.log('[Brokers] Opening affiliate URL in new tab:', broker.affiliate_url);
+    window.open(broker.affiliate_url, '_blank', 'noopener,noreferrer');
+}
+
+function generateStarRating(rating) {
+    const fullStars = Math.floor(rating);
+    const hasHalfStar = rating % 1 >= 0.5;
+    const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+
+    let stars = '';
+    for (let i = 0; i < fullStars; i++) {
+        stars += '<i class="bi bi-star-fill text-warning"></i>';
+    }
+    if (hasHalfStar) {
+        stars += '<i class="bi bi-star-half text-warning"></i>';
+    }
+    for (let i = 0; i < emptyStars; i++) {
+        stars += '<i class="bi bi-star text-warning"></i>';
+    }
+
+    return stars;
+}
+
+
+function createBrokerCard(broker, placement = 'broker_page') {
+    const card = document.createElement('div');
+    card.className = 'col-md-4 mb-4';
+
+    let pros = [];
+    try {
+        pros = typeof broker.pros === 'string' ? JSON.parse(broker.pros) : broker.pros || [];
+    } catch (e) {
+        console.error('[Brokers] Failed to parse pros:', e);
+        pros = [];
+    }
+
+    const stars = generateStarRating(broker.rating || 0);
+
+    card.innerHTML = `
+        <div class="card h-100 shadow-sm">
+            ${broker.logo_url ? `
+                <img src="${broker.logo_url}" class="card-img-top p-3" alt="${broker.display_name}" style="height: 80px; object-fit: contain;">
+            ` : ''}
+            <div class="card-body d-flex flex-column">
+                <h5 class="card-title">${broker.display_name}</h5>
+                <div class="mb-2">
+                    ${stars}
+                    <small class="text-muted ms-2">(${broker.rating || 0})</small>
+                </div>
+                <p class="card-text text-muted small">${broker.description || ''}</p>
+
+                <div class="mb-3">
+                    <h6 class="text-success mb-2">主なメリット</h6>
+                    <ul class="small ps-3">
+                        ${pros.map(pro => `<li>${pro}</li>`).join('')}
+                    </ul>
+                </div>
+
+                <div class="mb-3">
+                    <strong class="small">最適な人:</strong>
+                    <span class="badge bg-info text-dark">${broker.best_for || ''}</span>
+                </div>
+
+                <div class="mt-auto">
+                    <button class="btn btn-primary w-100 affiliate-link-btn"
+                            data-broker-id="${broker.id}"
+                            data-broker-name="${broker.broker_name}"
+                            data-affiliate-url="${broker.affiliate_url}">
+                        公式サイトで口座開設（無料）
+                        <span class="badge bg-light text-dark ms-2">AD</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    const button = card.querySelector('.affiliate-link-btn');
+    button.addEventListener('click', (e) => {
+        const brokerData = {
+            broker_id: parseInt(button.dataset.brokerId),
+            broker_name: button.dataset.brokerName,
+            display_name: broker.display_name,
+            region: broker.region,
+            affiliate_url: button.dataset.affiliateUrl
+        };
+        handleAffiliateClick(e, brokerData, placement);
+    });
+
     return card;
 }
 
-/**
- * Creates an HTML table row for a single broker in the comparison table.
- * @param {object} broker - Broker data.
- * @returns {HTMLElement} - The created table row element.
- */
-function createBrokerTableRow(broker) {
-    const row = document.createElement('tr');
-    row.innerHTML = `
-        <td>
-            ${broker.logo_url ? `<img src="${broker.logo_url}" alt="${broker.display_name} logo" style="max-height: 30px; vertical-align: middle;" class="me-2">` : ''}
-            ${broker.display_name}
-        </td>
-        <td>${broker.commission_rate > 0 ? `${broker.commission_rate} ${broker.region === 'JP' ? '円' : '$'}` : '要確認'}</td>
-        <td>${broker.pros.length}+</td> <!-- Assuming pros roughly indicates feature count -->
-        <td>${broker.best_for}</td>
-        <td>${'⭐'.repeat(Math.round(broker.rating))}</td>
-        <td>
-            <a href="#" class="btn btn-sm btn-outline-primary affiliate-link" 
-               data-broker-id="${broker.id}" data-placement="broker_table">
-                口座開設
-                <span class="badge bg-info ms-1">AD</span>
-            </a>
-        </td>
-    `;
-     const affiliateLink = row.querySelector('.affiliate-link');
-    if (affiliateLink) {
-        affiliateLink.addEventListener('click', (e) => {
+
+async function loadBrokers(region = 'all') {
+    console.log('[Brokers] Loading brokers for region:', region);
+
+    const container = document.getElementById('broker-cards-container');
+    if (!container) {
+        console.error('[Brokers] Container #broker-cards-container not found');
+        return;
+    }
+
+    container.innerHTML = '<div class="text-center py-5"><div class="spinner-border" role="status"></div></div>';
+
+    try {
+        const url = region === 'all'
+            ? '/api/brokers'
+            : `/api/brokers?region=${region}`;
+
+        console.log('[Brokers] Fetching from:', url);
+
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        const brokers = data || []; // `data`が直接配列であることを期待
+
+        if (brokers.length === 0) {
+            container.innerHTML = '<div class="col-12 text-center py-5"><p class="text-muted">この地域の証券会社は見つかりませんでした。</p></div>';
+            return;
+        }
+
+        container.innerHTML = '';
+        brokers.forEach(broker => {
+            const card = createBrokerCard(broker, 'broker_page');
+            container.appendChild(card);
+        });
+
+        console.log('[Brokers] Brokers displayed successfully');
+
+    } catch (error) {
+        console.error('[Brokers] Error loading brokers:', error);
+        container.innerHTML = `
+            <div class="col-12">
+                <div class="alert alert-danger" role="alert">
+                    <h4 class="alert-heading">エラー</h4>
+                    <p>証券会社情報の取得に失敗しました: ${error.message}</p>
+                    <button class="btn btn-primary" onclick="loadBrokers('${region}')">再試行</button>
+                </div>
+            </div>
+        `;
+    }
+}
+
+
+function filterByRegion(region) {
+    console.log('[Brokers] Filtering by region:', region);
+
+    document.querySelectorAll('.region-tab').forEach(tab => {
+        tab.classList.remove('active');
+        if (tab.dataset.region === region) {
+            tab.classList.add('active');
+        }
+    });
+
+    loadBrokers(region);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('[Brokers] Page initializing...');
+
+    document.querySelectorAll('.region-tab').forEach(tab => {
+        tab.addEventListener('click', (e) => {
             e.preventDefault();
-            analytics.trackAffiliateClick(broker, 'broker_table')
-                .then(response => {
-                    if (response.redirect_url) {
-                        window.location.href = response.redirect_url;
-                    } else {
-                        window.location.href = broker.affiliate_url; // Fallback to direct URL
-                    }
-                })
-                .catch(() => {
-                    window.location.href = broker.affiliate_url; // Fallback on error
-                });
-        });
-    }
-    return row;
-}
-
-/**
- * Renders the fetched brokers into cards and the comparison table.
- * @param {Array} brokers - An array of broker objects.
- */
-function renderBrokers(brokers) {
-    brokerCardsContainer.innerHTML = '';
-    comparisonTableBody.innerHTML = '';
-
-    brokers.forEach(broker => {
-        brokerCardsContainer.appendChild(createBrokerCard(broker));
-        comparisonTableBody.appendChild(createBrokerTableRow(broker));
-    });
-    allBrokers = brokers; // Store for sorting
-}
-
-/**
- * Handles region tab switching.
- * @param {Event} event - The click event.
- */
-async function handleRegionTabClick(event) {
-    const target = event.target;
-    if (target.tagName === 'BUTTON' && target.closest('#regionTabs')) {
-        const region = target.dataset.region;
-        if (region) {
-            const brokers = await fetchBrokers(region);
-            renderBrokers(brokers);
-        }
-    }
-}
-
-let currentSortColumn = null;
-let currentSortDirection = 'asc'; // 'asc' or 'desc'
-
-/**
- * Sorts the broker comparison table.
- * @param {string} sortBy - The column key to sort by (e.g., 'display_name', 'rating').
- */
-function sortBrokers(sortBy) {
-    if (currentSortColumn === sortBy) {
-        currentSortDirection = (currentSortDirection === 'asc') ? 'desc' : 'asc';
-    } else {
-        currentSortColumn = sortBy;
-        currentSortDirection = 'asc';
-    }
-
-    const sortedBrokers = [...allBrokers].sort((a, b) => {
-        let valA = a[sortBy];
-        let valB = b[sortBy];
-
-        // Custom handling for specific types if necessary (e.g., numeric vs string)
-        if (typeof valA === 'string') {
-            valA = valA.toLowerCase();
-            valB = valB.toLowerCase();
-        }
-
-        if (valA < valB) return currentSortDirection === 'asc' ? -1 : 1;
-        if (valA > valB) return currentSortDirection === 'asc' ? 1 : -1;
-        return 0;
-    });
-    renderBrokers(sortedBrokers); // Re-render sorted data
-
-    // Update sort icons in table header
-    const headers = brokerComparisonTable.querySelectorAll('th[data-sort-by]');
-    headers.forEach(header => {
-        const icon = header.querySelector('i');
-        if (icon) {
-            icon.className = 'bi bi-arrow-down-up'; // Reset all
-        }
-        if (header.dataset.sortBy === currentSortColumn && icon) {
-            icon.className = currentSortDirection === 'asc' ? 'bi bi-arrow-up' : 'bi bi-arrow-down';
-        }
-    });
-}
-
-/**
- * Sets up all event listeners for the page.
- */
-function setupEventListeners() {
-    regionTabsContainer.addEventListener('click', handleRegionTabClick);
-
-    // Setup sortable table headers
-    const sortableHeaders = brokerComparisonTable.querySelectorAll('th[data-sort-by]');
-    sortableHeaders.forEach(header => {
-        header.style.cursor = 'pointer';
-        header.addEventListener('click', () => {
-            const sortBy = header.dataset.sortBy;
-            if (sortBy) {
-                sortBrokers(sortBy);
-            }
+            const region = tab.dataset.region;
+            filterByRegion(region);
         });
     });
-}
 
-
-// Initialize page on DOMContentLoaded
-document.addEventListener('DOMContentLoaded', async () => {
-    theme.loadSavedTheme(); // Apply saved theme
-    setupEventListeners();
-
-    // Track page view for the brokers page
-    analytics.trackPageView("Broker Comparison Page");
-
-    // Load brokers for the default region (e.g., "US")
-    const defaultRegion = detectUserRegion();
-    // Activate the corresponding tab
-    const defaultTabButton = regionTabsContainer.querySelector(`button[data-region="${defaultRegion}"]`);
-    if (defaultTabButton) {
-        new bootstrap.Tab(defaultTabButton).show();
+    try {
+        loadBrokers('US');
+    } catch (error) {
+        console.error('[Brokers] Initial loadBrokers failed:', error);
     }
-    
-    const brokers = await fetchBrokers(defaultRegion);
-    renderBrokers(brokers);
+
+    console.log('[Brokers] Page initialized');
 });
