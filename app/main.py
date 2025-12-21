@@ -7,8 +7,9 @@ from fastapi.staticfiles import StaticFiles
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
+from slowapi.middleware import SlowAPIMiddleware # 追加
 
-from app.api import analysis, etf, portfolio, simulation, affiliate, admin
+from app.api import analysis, etf, portfolio, simulation, affiliate, admin, auth # authを追加
 from app.config import get_settings
 
 
@@ -39,11 +40,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(SlowAPIMiddleware) # 追加
 
 # --- Rate Limiter ---
 limiter = Limiter(
     key_func=get_remote_address,
-    default_limits=[settings.rate_limit_per_minute]
+    default_limits=["60/minute"] # settings.rate_limit_per_minute はもう使わない
 )
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
@@ -69,6 +71,7 @@ app.include_router(portfolio.router)
 app.include_router(simulation.router)
 app.include_router(affiliate.router)
 app.include_router(admin.router)
+app.include_router(auth.router) # authルーターを追加
 
 
 @app.get("/version", tags=["Monitoring"])

@@ -14,6 +14,8 @@ from app.schemas import (AffiliateBroker as SchemaAffiliateBroker,
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
+from slowapi import Limiter # 追加
+from app.dependencies import get_rate_limiter # 追加
 
 # from app.dependencies import get_current_user_id # Placeholder for user ID retrieval
 
@@ -26,18 +28,23 @@ router = APIRouter(prefix="/api", tags=["Affiliate"])
     summary="Get a list of affiliate brokers",
     description="Retrieve a list of affiliate brokerage firms, with optional filtering by region and activity status."
 )
+@limiter.limit("60/minute") # レート制限を追加
 async def get_brokers(
+    request: Request, # Requestを追加
     db: Session = Depends(get_db),
     region: Optional[str] = None,
-    active_only: bool = True
+    active_only: bool = True,
+    limiter: Limiter = Depends(get_rate_limiter) # Limiterを追加
 ) -> List[SchemaAffiliateBroker]:
     """
     Retrieve a list of affiliate brokerage firms.
 
     Args:
+        request: The FastAPI request object for rate limiting.
         db: The database session.
         region: Optional. Filter brokers by region (e.g., "US", "JP").
         active_only: If true, only return active brokers.
+        limiter: The rate limiter instance.
 
     Returns:
         A list of AffiliateBroker schemas.
@@ -67,16 +74,21 @@ async def get_brokers(
     summary="Get recommended affiliate brokers",
     description="Retrieve a list of recommended affiliate brokerage firms based on region, user level, and selected ETFs."
 )
+@limiter.limit("60/minute") # レート制限を追加
 async def get_broker_recommendations(
+    request: Request, # Requestを追加
     query_params: BrokerRecommendationQuery = Depends(),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    limiter: Limiter = Depends(get_rate_limiter) # Limiterを追加
 ) -> List[SchemaAffiliateBroker]:
     """
     Retrieve a list of recommended affiliate brokerage firms.
 
     Args:
+        request: The FastAPI request object for rate limiting.
         query_params: Query parameters including region, user level, and ETFs.
         db: The database session.
+        limiter: The rate limiter instance.
 
     Returns:
         A list of recommended AffiliateBroker schemas, sorted by rating.
@@ -129,20 +141,23 @@ async def get_broker_recommendations(
     summary="Track an affiliate link click",
     description="Record details of a user clicking on an affiliate link for analytics and conversion tracking."
 )
+@limiter.limit("30/minute") # レート制限を追加
 async def track_affiliate_click(
+    request: Request, # Requestを追加
     click_data: TrackClickRequest,
-    request: Request,
     db: Session = Depends(get_db),
     # current_user_id: str = Depends(get_current_user_id) # Uncomment when user auth is integrated
+    limiter: Limiter = Depends(get_rate_limiter) # Limiterを追加
 ) -> dict:
     """
     Record an affiliate link click.
 
     Args:
+        request: The FastAPI request object for rate limiting.
         click_data: The data for the click event.
-        request: The FastAPI request object to extract user agent and IP.
         db: The database session.
         # current_user_id: The ID of the authenticated user, if available.
+        limiter: The rate limiter instance.
 
     Returns:
         A dictionary containing success status and redirect URL.

@@ -1,9 +1,10 @@
 from typing import Any, Dict
 
 import numpy as np
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request # Requestを追加
+from slowapi import Limiter # 追加
 
-from app.dependencies import get_simulation_service
+from app.dependencies import get_simulation_service, get_rate_limiter # get_rate_limiterを追加
 from app.schemas import (
     DcaSimulationRequest,
     FutureDcaSimulationRequest,
@@ -18,16 +19,22 @@ router = APIRouter(
 
 
 @router.post("/monte_carlo", response_model=Dict[str, Any])
+@limiter.limit("10/minute") # レート制限を追加
 async def run_monte_carlo(
-    request: MonteCarloSimulationRequest,
+    request: Request, # Requestを追加
+    monte_carlo_request: MonteCarloSimulationRequest, # requestからmonte_carlo_requestに名前変更
     simulation_service: SimulationService = Depends(get_simulation_service),
+    limiter: Limiter = Depends(get_rate_limiter) # Limiterを追加
 ) -> Dict[str, Any]:
     """
     Runs a Monte Carlo simulation for a portfolio with equal weights.
     
     Args:
-        request: Simulation parameters including tickers, period, 
-                 number of simulations, and simulation days
+        request: The FastAPI request object for rate limiting.
+        monte_carlo_request: Simulation parameters including tickers, period, 
+                 number of simulations, and simulation days.
+        simulation_service: The simulation service instance.
+        limiter: The rate limiter instance.
         
     Returns:
         Dictionary containing:
@@ -39,29 +46,35 @@ async def run_monte_carlo(
         HTTPException: 404 if tickers not found, 400 if parameters invalid
     """
     # Calculate equal weights for all tickers
-    num_assets = len(request.tickers)
+    num_assets = len(monte_carlo_request.tickers)
     weights = np.array([1.0 / num_assets] * num_assets) if num_assets > 0 else np.array([])
 
     return simulation_service.run_monte_carlo(
-        tickers=request.tickers,
+        tickers=monte_carlo_request.tickers,
         weights=weights,
-        period=request.period,
-        num_simulations=request.num_simulations,
-        simulation_days=request.simulation_days,
+        period=monte_carlo_request.period,
+        num_simulations=monte_carlo_request.num_simulations,
+        simulation_days=monte_carlo_request.simulation_days,
     )
 
 
 @router.post("/historical_dca", response_model=Dict[str, Any])
+@limiter.limit("20/minute") # レート制限を追加
 async def run_historical_dca(
-    request: DcaSimulationRequest,
+    request: Request, # Requestを追加
+    dca_simulation_request: DcaSimulationRequest, # requestからdca_simulation_requestに名前変更
     simulation_service: SimulationService = Depends(get_simulation_service),
+    limiter: Limiter = Depends(get_rate_limiter) # Limiterを追加
 ) -> Dict[str, Any]:
     """
     Runs a historical Dollar-Cost Averaging (DCA) simulation.
     
     Args:
-        request: DCA parameters including tickers, weights, investment amount,
-                 frequency, and historical period
+        request: The FastAPI request object for rate limiting.
+        dca_simulation_request: DCA parameters including tickers, weights, investment amount,
+                 frequency, and historical period.
+        simulation_service: The simulation service instance.
+        limiter: The rate limiter instance.
         
     Returns:
         Dictionary containing:
@@ -75,25 +88,31 @@ async def run_historical_dca(
         HTTPException: 404 if tickers not found, 400 if parameters invalid
     """
     return simulation_service.run_historical_dca(
-        tickers=request.tickers,
-        weights=request.weights,
-        investment_amount=request.investment_amount,
-        frequency=request.frequency,
-        period=request.period,
+        tickers=dca_simulation_request.tickers,
+        weights=dca_simulation_request.weights,
+        investment_amount=dca_simulation_request.investment_amount,
+        frequency=dca_simulation_request.frequency,
+        period=dca_simulation_request.period,
     )
 
 
 @router.post("/future_dca", response_model=Dict[str, Any])
+@limiter.limit("20/minute") # レート制限を追加
 async def run_future_dca(
-    request: FutureDcaSimulationRequest,
+    request: Request, # Requestを追加
+    future_dca_simulation_request: FutureDcaSimulationRequest, # requestからfuture_dca_simulation_requestに名前変更
     simulation_service: SimulationService = Depends(get_simulation_service),
+    limiter: Limiter = Depends(get_rate_limiter) # Limiterを追加
 ) -> Dict[str, Any]:
     """
     Runs a forward-looking, probabilistic DCA simulation based on portfolio metrics.
     
     Args:
-        request: Future projection parameters including expected return/risk,
-                 investment amount, frequency, and number of years
+        request: The FastAPI request object for rate limiting.
+        future_dca_simulation_request: Future projection parameters including expected return/risk,
+                 investment amount, frequency, and number of years.
+        simulation_service: The simulation service instance.
+        limiter: The rate limiter instance.
         
     Returns:
         Dictionary containing:
@@ -108,9 +127,9 @@ async def run_future_dca(
         HTTPException: 400 if parameters invalid
     """
     return simulation_service.run_future_dca(
-        portfolio_return=request.portfolio_return,
-        portfolio_risk=request.portfolio_risk,
-        investment_amount=request.investment_amount,
-        frequency=request.frequency,
-        years=request.years,
+        portfolio_return=future_dca_simulation_request.portfolio_return,
+        portfolio_risk=future_dca_simulation_request.portfolio_risk,
+        investment_amount=future_dca_simulation_request.investment_amount,
+        frequency=future_dca_simulation_request.frequency,
+        years=future_dca_simulation_request.years,
     )
