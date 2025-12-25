@@ -1,16 +1,21 @@
 from typing import Any, Dict
 
 import numpy as np
-from fastapi import APIRouter, Depends, Request # Requestを追加
+from fastapi import APIRouter, Depends, Request
 from slowapi import Limiter # 追加
+from slowapi.util import get_remote_address # 追加
 
-from app.dependencies import get_simulation_service, get_rate_limiter # get_rate_limiterを追加
+from app.dependencies import get_simulation_service # get_rate_limiterは不要になる
 from app.schemas import (
     DcaSimulationRequest,
     FutureDcaSimulationRequest,
     MonteCarloSimulationRequest,
 )
 from app.services.simulation_service import SimulationService
+
+# 各ルーターファイルで個別のLimiterインスタンスを定義
+# このlimiterがデコレータで参照される
+limiter = Limiter(key_func=get_remote_address)
 
 router = APIRouter(
     prefix="/simulation",
@@ -24,7 +29,7 @@ async def run_monte_carlo(
     request: Request, # Requestを追加
     monte_carlo_request: MonteCarloSimulationRequest, # requestからmonte_carlo_requestに名前変更
     simulation_service: SimulationService = Depends(get_simulation_service),
-    limiter: Limiter = Depends(get_rate_limiter) # Limiterを追加
+    # limiter: Limiter = Depends(get_rate_limiter) # ここは不要になる
 ) -> Dict[str, Any]:
     """
     Runs a Monte Carlo simulation for a portfolio with equal weights.
@@ -34,7 +39,7 @@ async def run_monte_carlo(
         monte_carlo_request: Simulation parameters including tickers, period, 
                  number of simulations, and simulation days.
         simulation_service: The simulation service instance.
-        limiter: The rate limiter instance.
+        # limiter: The rate limiter instance. # ここは不要になる
         
     Returns:
         Dictionary containing:
@@ -64,7 +69,7 @@ async def run_historical_dca(
     request: Request, # Requestを追加
     dca_simulation_request: DcaSimulationRequest, # requestからdca_simulation_requestに名前変更
     simulation_service: SimulationService = Depends(get_simulation_service),
-    limiter: Limiter = Depends(get_rate_limiter) # Limiterを追加
+    # limiter: Limiter = Depends(get_rate_limiter) # ここは不要になる
 ) -> Dict[str, Any]:
     """
     Runs a historical Dollar-Cost Averaging (DCA) simulation.
@@ -74,7 +79,7 @@ async def run_historical_dca(
         dca_simulation_request: DCA parameters including tickers, weights, investment amount,
                  frequency, and historical period.
         simulation_service: The simulation service instance.
-        limiter: The rate limiter instance.
+        # limiter: The rate limiter instance. # ここは不要になる
         
     Returns:
         Dictionary containing:
@@ -102,7 +107,7 @@ async def run_future_dca(
     request: Request, # Requestを追加
     future_dca_simulation_request: FutureDcaSimulationRequest, # requestからfuture_dca_simulation_requestに名前変更
     simulation_service: SimulationService = Depends(get_simulation_service),
-    limiter: Limiter = Depends(get_rate_limiter) # Limiterを追加
+    # limiter: Limiter = Depends(get_rate_limiter) # ここは不要になる
 ) -> Dict[str, Any]:
     """
     Runs a forward-looking, probabilistic DCA simulation based on portfolio metrics.
@@ -112,7 +117,7 @@ async def run_future_dca(
         future_dca_simulation_request: Future projection parameters including expected return/risk,
                  investment amount, frequency, and number of years.
         simulation_service: The simulation service instance.
-        limiter: The rate limiter instance.
+        # limiter: The rate limiter instance. # ここは不要になる
         
     Returns:
         Dictionary containing:

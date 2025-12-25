@@ -4,7 +4,9 @@ from typing import Annotated, Generator
 from datetime import datetime, timedelta
 
 from fastapi import Depends, Request, HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthCredentials
+from fastapi.security import HTTPBearer
+from slowapi import Limiter # Limiterをインポート
+# from fastapi.security.oauth2 import HTTPAuthorizationCredentials # 修正: この行は不要になる
 from jose import JWTError, jwt
 
 from sqlalchemy.orm import Session
@@ -43,11 +45,13 @@ def create_access_token(data: dict, expires_delta: timedelta = None):
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
-def get_current_user(credentials: HTTPAuthCredentials = Depends(security)):
+def get_current_user(credentials: str = Depends(security)): # 修正
     """
     JWTトークンから現在のユーザーを取得
     """
-    token = credentials.credentials
+    token = credentials
+    
+    
     
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])

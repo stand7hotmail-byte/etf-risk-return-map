@@ -4,15 +4,20 @@ API endpoints for user authentication (registration, login, Google OAuth).
 """
 from datetime import timedelta
 
-from fastapi import APIRouter, Depends, HTTPException, status, Request # Requestを追加
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from slowapi import Limiter # 追加
+from slowapi.util import get_remote_address # 追加
 
 from app.database import get_db
-from app.dependencies import create_access_token, get_rate_limiter # get_rate_limiterを追加
+from app.dependencies import create_access_token # get_rate_limiterは不要になる
 from app.schemas import Token, UserCreate
 from app.services.auth_service import AuthService
+
+# 各ルーターファイルで個別のLimiterインスタンスを定義
+# このlimiterがデコレータで参照される
+limiter = Limiter(key_func=get_remote_address)
 
 
 router = APIRouter(tags=["Authentication"])
@@ -21,9 +26,9 @@ router = APIRouter(tags=["Authentication"])
 @router.post("/register", response_model=Token, summary="Register a new user")
 @limiter.limit("3/minute") # レート制限を追加
 async def register_user(
-    request: Request, # Requestを追加
+    request: Request,
     user_data: UserCreate, db: Session = Depends(get_db),
-    limiter: Limiter = Depends(get_rate_limiter) # Limiterを追加
+    # limiter: Limiter = Depends(get_rate_limiter) # ここは不要になる
 ):
     """
     Registers a new user with a username and password.
@@ -32,7 +37,7 @@ async def register_user(
         request: The FastAPI request object for rate limiting.
         user_data: The UserCreate schema containing username and password.
         db: The database session.
-        limiter: The rate limiter instance.
+        # limiter: The rate limiter instance. # ここは不要になる
 
     Returns:
         A Token object containing the access token and token type.
@@ -58,9 +63,9 @@ async def register_user(
 @router.post("/token", response_model=Token, summary="Authenticate user and get JWT token")
 @limiter.limit("5/minute") # レート制限を追加
 async def login_for_access_token(
-    request: Request, # Requestを追加
+    request: Request,
     form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db),
-    limiter: Limiter = Depends(get_rate_limiter) # Limiterを追加
+    # limiter: Limiter = Depends(get_rate_limiter) # ここは不要になる
 ):
     """
     Authenticates a user with username and password and returns a JWT access token.
@@ -69,7 +74,7 @@ async def login_for_access_token(
         request: The FastAPI request object for rate limiting.
         form_data: OAuth2PasswordRequestForm containing username and password.
         db: The database session.
-        limiter: The rate limiter instance.
+        # limiter: The rate limiter instance. # ここは不要になる
 
     Returns:
         A Token object containing the access token and token type.
@@ -95,13 +100,13 @@ async def login_for_access_token(
 @router.post("/token/google", response_model=Token, summary="Authenticate with Google OAuth token")
 @limiter.limit("10/minute") # レート制限を追加
 async def login_with_google(
-    request: Request, # Requestを追加
+    request: Request,
     # Firebase Admin SDK is needed here to verify the ID token
     # For simplicity, this example assumes a valid ID token is provided
     # In a real app, you would verify this with firebase_admin.auth.verify_id_token
     google_token: dict, # Should be GoogleToken schema in schemas.py
     db: Session = Depends(get_db),
-    limiter: Limiter = Depends(get_rate_limiter) # Limiterを追加
+    # limiter: Limiter = Depends(get_rate_limiter) # ここは不要になる
 ):
     """
     Authenticates a user using a Google ID token and returns a JWT access token.
@@ -111,7 +116,7 @@ async def login_with_google(
         google_token: A dictionary containing the Google ID token.
                       (Ideally should be GoogleToken schema).
         db: The database session.
-        limiter: The rate limiter instance.
+        # limiter: The rate limiter instance. # ここは不要になる
 
     Returns:
         A Token object containing the access token and token type.

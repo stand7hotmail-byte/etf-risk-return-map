@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Admin API endpoints for managing and retrieving affiliate performance statistics.
 """
@@ -10,20 +11,25 @@ from app.models.affiliate import AffiliateBroker, AffiliateClick
 from app.schemas import (AffiliateStatsResponse, BrokerPerformanceStats,
                          DailyPerformanceStats, ManualConversionRequest,
                          PlacementPerformanceStats, TopPerformingBroker)
-from fastapi import APIRouter, Depends, HTTPException, status, Request # Requestを追加
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import func, case
 from sqlalchemy.orm import Session
-from slowapi import Limiter # 追加
-from slowapi.util import get_remote_address # 追加 # 追加
-from app.dependencies import get_admin_user # get_rate_limiterは削除
+
+# Placeholder for admin user dependency.
+# In a real application, this would verify the user's authentication
+# and authorization (e.g., check for an 'admin' role).
+def get_admin_user():
+    """
+    Placeholder dependency to simulate admin authentication.
+    Raises HTTPException if user is not considered an admin.
+    """
+    # For now, we'll allow access, but in production, this should check
+    # a proper authentication token and user roles.
+    # raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+    return {"username": "admin", "id": "admin_user_id"}
 
 
 router = APIRouter(prefix="/api/admin/affiliate", tags=["Admin Affiliate"])
-
-# 各ルーターファイルで個別のLimiterインスタンスを定義
-# このlimiterがデコレータで参照される
-limiter = Limiter(key_func=get_remote_address)
-
 
 # In-memory cache for aggregate statistics
 # In a production environment, consider a more robust caching solution like Redis.
@@ -157,25 +163,20 @@ def get_cached_affiliate_stats(start_date: datetime, end_date: datetime, db: Ses
     summary="Get overall affiliate statistics",
     description="Retrieves aggregated affiliate clicks, conversions, conversion rates, and estimated revenue for a specified period."
 )
-@limiter.limit("100/minute") # レート制限を追加
 async def get_affiliate_stats(
-    request: Request, # Requestを追加
     db: Session = Depends(get_db),
-    admin_user: dict = Depends(get_admin_user), # Admin auth (コメントアウトを外す)
+   # admin_user: dict = Depends(get_admin_user), # Admin auth (この行をコメントアウト)
     start_date: Optional[datetime] = None,
-    end_date: Optional[Optional[datetime]] = None,
-    # limiter: Limiter = Depends(get_rate_limiter) # ここは不要になる
+    end_date: Optional[datetime] = None
 ) -> AffiliateStatsResponse:
     """
     Get overall affiliate statistics for a given period.
 
     Args:
-        request: The FastAPI request object for rate limiting.
         db: The database session.
         admin_user: Authenticated admin user (from dependency).
         start_date: Optional. Start date for aggregation (defaults to 30 days ago).
         end_date: Optional. End date for aggregation (defaults to today).
-        limiter: The rate limiter instance.
 
     Returns:
         AffiliateStatsResponse: Aggregated statistics.
@@ -198,25 +199,20 @@ async def get_affiliate_stats(
     summary="Get top-performing affiliate brokers",
     description="Retrieves a list of affiliate brokers ranked by a specified metric (clicks, conversions, or revenue)."
 )
-@limiter.limit("100/minute") # レート制限を追加
 async def get_top_performing_brokers(
-    request: Request, # Requestを追加
     db: Session = Depends(get_db),
-    admin_user: dict = Depends(get_admin_user), # Admin auth (コメントアウトを外す)
+     # admin_user: dict = Depends(get_admin_user), # Admin auth (この行をコメントアウト)
     metric: str = "conversions", # clicks/conversions/revenue
-    limit: int = 5,
-    # limiter: Limiter = Depends(get_rate_limiter) # ここは不要になる
+    limit: int = 5
 ) -> List[TopPerformingBroker]:
     """
     Get top-performing affiliate brokers based on a given metric.
 
     Args:
-        request: The FastAPI request object for rate limiting.
         db: The database session.
         admin_user: Authenticated admin user (from dependency).
         metric: Metric to rank by ('clicks', 'conversions', 'revenue').
         limit: Number of top brokers to return.
-        limiter: The rate limiter instance.
     Returns:
         List[TopPerformingBroker]: List of top brokers with their stats.
     """
@@ -282,23 +278,18 @@ async def get_top_performing_brokers(
     summary="Manually record an affiliate conversion",
     description="Allows administrators to manually mark an affiliate click as converted, updating its status and conversion timestamp."
 )
-@limiter.limit("30/minute") # レート制限を追加 (管理者だが、POST操作のためやや厳しく)
 async def record_manual_conversion(
-    request: Request, # Requestを追加
     conversion_data: ManualConversionRequest,
     db: Session = Depends(get_db),
-    admin_user: dict = Depends(get_admin_user), # Admin auth (コメントアウトを外す)
-    # limiter: Limiter = Depends(get_rate_limiter) # ここは不要になる
+    # admin_user: dict = Depends(get_admin_user), # Admin auth (この行をコメントアウト)
 ) -> dict:
     """
     Manually record an affiliate conversion.
 
     Args:
-        request: The FastAPI request object for rate limiting.
         conversion_data: The conversion data, including click_id.
         db: The database session.
         admin_user: Authenticated admin user (from dependency).
-        limiter: The rate limiter instance.
 
     Returns:
         A dictionary indicating success.

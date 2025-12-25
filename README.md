@@ -27,33 +27,36 @@ A comprehensive FastAPI-based web application for ETF portfolio analysis, optimi
 
 ## ✨ Features
 
-### Portfolio Optimization
-- **Efficient Frontier Calculation**: Compute optimal risk-return trade-offs
-- **Tangency Portfolio**: Find the maximum Sharpe ratio portfolio
-- **Target Optimization**: Optimize for specific return or risk levels
-- **Custom Portfolio Analysis**: Analyze portfolios with custom asset weights
+### Core Analysis
+- **Efficient Frontier**: Calculate optimal risk-return trade-offs.
+- **Monte Carlo Simulation**: Project portfolio returns with VaR/CVaR.
+- **Custom Portfolio Analysis**: Analyze portfolios with custom weights.
+- **Target Optimization**: Optimize for specific return or risk levels.
+- **Historical Performance**: Track cumulative returns over time.
+- **Correlation Matrix**: Visualize asset correlations.
+- **DCA Simulation**: Backtest and forecast Dollar-Cost Averaging strategies.
+- **CSV Analysis**: Analyze custom ETF data from CSV files.
 
-### Simulations
-- **Monte Carlo Simulation**: Project portfolio returns with VaR and CVaR metrics
-- **Historical DCA**: Backtest dollar-cost averaging strategies
-- **Future DCA Projection**: Forecast future portfolio values with probabilistic scenarios
+### Web Interface & UX
+- **Interactive Dashboard**: Modern, responsive UI built with Bootstrap 5.
+- **Real-time Visualization**: Interactive Plotly.js charts.
+- **Advanced Filtering**: Filter ETFs by asset class, region, style, and more.
+- **Dark/Light Mode**: User-selectable theme support.
 
-### Data Analysis
-- **Historical Performance**: Track cumulative returns over time
-- **Correlation Matrix**: Visualize asset correlations
-- **CSV Analysis**: Analyze custom ETF data from CSV files
+### User & Portfolio Management
+- **User Authentication**: Secure user registration and login with JWT.
+- **Google OAuth**: Seamless sign-in with Google accounts.
+- **Portfolio Persistence**: Save, load, and manage portfolio configurations (functionality under review).
 
-### Web Interface
-- **Interactive Dashboard**: Modern, responsive UI built with Bootstrap 5
-- **Real-time Visualization**: Plotly.js charts with dark/light theme support
-- **Advanced Filtering**: Filter ETFs by asset class, region, style, size, sector, and theme
-- **Portfolio Management**: Save, load, and manage multiple portfolio configurations
-- **User Authentication**: Secure login with username/password or Google OAuth
+### Affiliate & Admin
+- **Broker Recommendations**: Suggests suitable brokers based on user's portfolio.
+- **Affiliate Link Tracking**: Tracks clicks on affiliate links for analytics.
+- **Admin Dashboard**: A secure area for administrators to view performance statistics.
 
-### ETF Information
-- **Comprehensive ETF Database**: 80+ ETFs with detailed metadata
-- **Live Data Integration**: Real-time data from Yahoo Finance
-- **Risk-Free Rate**: Configurable risk-free rate for calculations
+### Data & Information
+- **Comprehensive ETF Database**: 80+ ETFs with detailed metadata from a local CSV.
+- **Live Data Integration**: Real-time market data from Yahoo Finance.
+- **Configurable Risk-Free Rate**: Adjustable rate for financial calculations.
 
 ---
 
@@ -75,19 +78,17 @@ A comprehensive FastAPI-based web application for ETF portfolio analysis, optimi
 - **Bootstrap 5.3**: Responsive UI framework
 - **Plotly.js 2.32**: Interactive data visualization
 - **Vanilla JavaScript (ES6 modules)**: Modular client-side logic
-- **Firebase Auth**: Google OAuth integration
 
 ### Database & Security
-- **Peewee ORM**: Lightweight database management
-- **Firebase Admin SDK**: Backend authentication
-- **JWT tokens**: Secure API authentication
+- **SQLAlchemy 2.0**: ORM for database interaction
+- **Firebase Admin SDK**: Backend authentication for Google OAuth
+- **JWT (python-jose)**: Secure API authentication tokens
 - **bcrypt**: Password hashing
-- **python-jose**: JWT handling
 
-### Infrastructure
-- **Google Cloud Platform**: Deployment and secrets management
-- **slowapi**: Rate limiting
-- **python-dotenv**: Environment configuration
+### Infrastructure & Others
+- **Google Cloud Platform**: Recommended for deployment
+- **slowapi**: Rate limiting for API endpoints
+- **python-dotenv**: Environment configuration management
 
 ---
 
@@ -171,37 +172,57 @@ A comprehensive FastAPI-based web application for ETF portfolio analysis, optimi
 ```
 etf-portfolio-api/
 ├── app/
-│   ├── api/                    # API endpoints
+│   ├── api/                    # API endpoint routers
+│   │   ├── admin.py           # Admin dashboard endpoints
+│   │   ├── affiliate.py       # Affiliate broker and tracking endpoints
+│   │   ├── analysis.py        # Financial analysis endpoints
+│   │   ├── auth.py            # User authentication endpoints
+│   │   ├── etf.py             # ETF information endpoints
 │   │   ├── portfolio.py       # Portfolio optimization endpoints
-│   │   ├── simulation.py      # Simulation endpoints
-│   │   ├── analysis.py        # Analysis endpoints
-│   │   └── etf.py             # ETF information endpoints
-│   ├── models/                 # Business logic
-│   │   └── portfolio.py       # Portfolio calculations
-│   ├── services/               # Service layer
-│   │   ├── data_service.py    # Data fetching and caching
-│   │   ├── optimization_service.py  # Portfolio optimization
-│   │   ├── simulation_service.py    # Simulations
-│   │   └── etf_service.py     # ETF information management
+│   │   └── simulation.py      # Financial simulation endpoints
+│   ├── db/
+│   │   └── database.py        # SQLAlchemy database setup
+│   ├── models/                 # SQLAlchemy ORM models
+│   │   ├── user.py            # User model
+│   │   └── affiliate.py       # AffiliateBroker and AffiliateClick models
+│   ├── services/               # Service layer (business logic)
+│   │   ├── auth_service.py    # Handles user creation and authentication
+│   │   ├── data_service.py    # Data fetching (yfinance) and caching
+│   │   ├── etf_service.py     # ETF information management
+│   │   ├── optimization_service.py  # Portfolio optimization logic
+│   │   └── simulation_service.py    # Simulation logic
 │   ├── utils/                  # Utility functions
 │   │   ├── cache.py           # Thread-safe caching
 │   │   ├── calculations.py    # Mathematical utilities
-│   │   └── formatters.py      # Data formatting
-│   ├── config.py              # Configuration management
+│   │   └── formatters.py      # Data formatting helpers
+│   ├── config.py              # Application configuration (Pydantic)
 │   ├── constants.py           # Global constants
-│   ├── dependencies.py        # Dependency injection
-│   ├── schemas.py             # Pydantic models
-│   └── main.py                # FastAPI application setup
-├── static/                     # Static files (JavaScript)
-│   ├── api.js                 # API communication layer
-│   ├── auth.js                # Authentication logic
-│   ├── main.js                # Main application logic
-│   ├── ui.js                  # UI manipulation
-│   ├── theme.js               # Dark/light theme switching
-│   └── jwt-decode.min.js      # JWT decoding library
-├── templates/                  # HTML templates
+│   ├── dependencies.py        # FastAPI dependency injection setup
+│   ├── schemas.py             # Pydantic data validation models
+│   └── main.py                # FastAPI app object and core middleware
+├── static/                     # Frontend static files
+│   ├── js/                    # (Recommended structure)
+│   │   ├── admin-dashboard.js # Admin dashboard logic
+│   │   ├── api.js             # API communication layer
+│   │   ├── auth.js            # Authentication and Firebase logic
+│   │   ├── brokers.js         # Broker comparison page logic
+│   │   ├── main.js            # Main application logic
+│   │   ├── theme.js           # Dark/light theme switching
+│   │   └── ui.js              # DOM manipulation and UI updates
+│   └── ...
+├── templates/                  # Jinja2 HTML templates
+│   ├── admin/
+│   │   └── affiliate_dashboard.html
+│   ├── blog/
+│   │   └── ...
+│   ├── brokers.html           # Broker comparison page
 │   └── index.html             # Main web interface
-├── main.py                    # Application entry point
+├── content/
+│   └── blog/                  # Markdown files for the blog
+├── scripts/
+│   ├── build_blog.py          # Script to generate static blog pages
+│   └── seed_brokers.py        # Script to seed initial broker data
+├── main.py                    # Application entry point (runs uvicorn)
 ├── etf_list.csv               # ETF definitions database
 ├── requirements.txt           # Python dependencies
 └── README.md                  # This file
@@ -211,78 +232,64 @@ etf-portfolio-api/
 
 ## 📡 API Endpoints
 
-### Portfolio Optimization
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/portfolio/efficient_frontier` | Calculate efficient frontier |
-| POST | `/portfolio/custom_metrics` | Analyze custom portfolio |
-| POST | `/portfolio/optimize_by_return` | Optimize for target return |
-| POST | `/portfolio/optimize_by_risk` | Optimize for target risk |
-
-### Simulations
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/simulation/monte_carlo` | Run Monte Carlo simulation |
-| POST | `/simulation/historical_dca` | Historical DCA backtest |
-| POST | `/simulation/future_dca` | Future DCA projection |
-
-### Analysis
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/analysis/historical_performance` | Get historical returns |
-| POST | `/analysis/correlation_matrix` | Calculate correlations |
-| POST | `/analysis/csv` | Analyze CSV data |
-
-### ETF Information
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/etfs/list` | Get all ETF definitions |
-| GET | `/etfs/details/{ticker}` | Get ETF details |
-| GET | `/etfs/risk_free_rate` | Get risk-free rate |
+All endpoints are prefixed with `/api`.
 
 ### Authentication
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/register` | Register new user |
-| POST | `/token` | Login with username/password |
-| POST | `/token/google` | Login with Google OAuth |
+| POST | `/register` | Register a new user. |
+| POST | `/token` | Authenticate with username/password to get a JWT token. |
+| POST | `/token/google` | Authenticate with a Google ID token to get a JWT token. |
 
-### Portfolio Management (Authenticated)
+### Portfolio Optimization
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/save_portfolio` | Save portfolio configuration |
-| GET | `/list_portfolios` | List user's portfolios |
-| GET | `/load_portfolio/{id}` | Load portfolio by ID |
-| DELETE | `/delete_portfolio/{id}` | Delete portfolio |
+| GET | `/portfolio/efficient_frontier` | Calculate efficient frontier for a set of tickers. |
+| POST | `/portfolio/custom_metrics` | Analyze a portfolio with custom weights. |
+| POST | `/portfolio/optimize_by_return` | Optimize a portfolio for a target return. |
+| POST | `/portfolio/optimize_by_risk` | Optimize a portfolio for a target risk. |
 
-### Example Request
+### Simulations
 
-```bash
-# Get efficient frontier
-curl -X GET "http://localhost:8000/portfolio/efficient_frontier?tickers=VTI&tickers=BND&period=5y"
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/simulation/monte_carlo` | Run a Monte Carlo simulation on a portfolio. |
+| POST | `/simulation/historical_dca` | Backtest a historical Dollar-Cost Averaging strategy. |
+| POST | `/simulation/future_dca` | Project future DCA results with probabilistic scenarios. |
 
-# Analyze custom portfolio
-curl -X POST "http://localhost:8000/portfolio/custom_metrics" \
-  -H "Content-Type: application/json" \
-  -d "{}\n  \"tickers\": [\"VTI\", \"BND\", \"GLD\"],\n  \"weights\": {\"VTI\": 0.6, \"BND\": 0.3, \"GLD\": 0.1},\n  \"period\": \"5y\"\n}"
+### Analysis
 
-# Register user
-curl -X POST "http://localhost:8000/register" \
-  -H "Content-Type: application/json" \
-  -d "{}\n  \"username\": \"testuser\",\n  \"password\": \"SecurePass123\"\n}"
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/analysis/historical_performance` | Get cumulative historical returns for selected tickers. |
+| POST | `/analysis/correlation_matrix` | Calculate the correlation matrix for selected tickers. |
+| POST | `/analysis/csv` | Analyze historical data from an uploaded CSV file. |
 
-# Login and save portfolio (with JWT token)
-curl -X POST "http://localhost:8000/save_portfolio" \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  -d "{}\n  \"name\": \"My Portfolio\",\n  \"content\": {\n    \"selectedTickers\": [\"VTI\", \"BND\"],\n    \"weights\": {\"VTI\": 0.6, \"BND\": 0.4}\n  }\n}"
-```
+### ETF Information
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/etfs/list` | Get all available ETF definitions. |
+| GET | `/etfs/details/{ticker}` | Get detailed information for a specific ETF. |
+| GET | `/etfs/risk_free_rate` | Get the configured risk-free rate. |
+
+### Affiliate
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/brokers` | Get a list of affiliate brokers, filterable by region. |
+| GET | `/brokers/recommend` | Get broker recommendations based on region and ETFs. |
+| POST | `/brokers/track-click` | Track a click on an affiliate link. |
+
+### Admin (Requires Admin Authentication)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/admin/affiliate/stats` | Get overall affiliate performance statistics. |
+| GET | `/admin/affiliate/top-performing` | Get top-performing brokers by a specific metric. |
+| POST | `/admin/affiliate/conversions` | Manually record an affiliate conversion. |
 
 ---
 
@@ -322,99 +329,39 @@ The web interface (`/`) provides a comprehensive dashboard with:
    - Persistent theme selection
    - Plotly charts automatically adapt to theme
 
-### JavaScript Module Structure
-
-The frontend uses ES6 modules for clean code organization:
-
-- **api.js**: All API communication logic
-- **auth.js**: Authentication and Firebase integration
-- **main.js**: Main application logic and event handling
-- **ui.js**: DOM manipulation and UI updates
-- **theme.js**: Theme switching functionality
-
----
-
 ## ⚙️ Configuration
 
 ### Environment Variables
 
-Create a `.env` file in the project root:
+Create a `.env` file in the project root by copying `.env.example`. This file is used to store sensitive keys and application-specific settings.
 
 ```env
+# Database
+DATABASE_URL=sqlite:///./data/affiliate.db
+
+# JWT Authentication
+SECRET_KEY=your-secret-key-change-in-production-minimum-32-characters
+ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=30
+
 # Application Settings
-APP_NAME="ETF Portfolio Analysis API"
 RISK_FREE_RATE=0.02
 CACHE_TTL_SECONDS=3600
 
-# Google Cloud Platform (for deployment)
-PROJECT_ID=your-gcp-project-id
+# CORS Settings (comma-separated for multiple origins)
+CORS_ORIGINS=http://localhost:8000,http://127.0.0.1:8000
 
-# CORS Origins (comma-separated)
-CORS_ORIGINS=http://localhost:8000,https://yourdomain.com
+# Google Analytics
+GA_MEASUREMENT_ID=G-XXXXXXXXXX
 
-# Rate Limiting
-RATE_LIMIT_PER_MINUTE=60/minute
-
-# Firebase (if not using GCP Secret Manager)
-# Note: For production, use Secret Manager instead
-FIREBASE_API_KEY=your-firebase-api-key
-FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
-FIREBASE_PROJECT_ID=your-project-id
+# Affiliate URLs (replace with actual URLs once approved)
+AFFILIATE_IBKR_URL=https://ibkr.com/referral/placeholder
+# ... and other broker URLs
 ```
-
-### Configuration Options
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `RISK_FREE_RATE` | 0.02 | Risk-free rate for Sharpe/Sortino ratios |
-| `CACHE_TTL_SECONDS` | 3600 | Cache time-to-live in seconds |
-| `PROJECT_ID` | "" | GCP project ID for Secret Manager |
 
 ### ETF Database
 
-The `etf_list.csv` file contains ETF metadata with the following structure:
-
-```csv
-ticker,asset_class,region,name,style,size,sector,theme
-SPY,Stock,US,SPDR S&P 500 ETF Trust,Blend,Large-Cap,,
-VTI,Stock,US,Vanguard Total Stock Market ETF,Blend,Total-Market,,
-BND,Bond,US,Vanguard Total Bond Market ETF,,,Government/Corporate,
-```
-
-To add new ETFs, simply append rows to this file with the same format.
-
----
-
-## 🔐 Authentication
-
-### User Registration & Login
-
-The application supports two authentication methods:
-
-1. **Username/Password Authentication**
-   - Password requirements: minimum 8 characters, at least one uppercase, one lowercase, and one number
-   - Passwords are hashed using bcrypt
-   - JWT tokens issued upon successful login
-
-2. **Google OAuth**
-   - Integrated with Firebase Authentication
-   - Seamless sign-in with Google accounts
-   - Backend validates Firebase ID tokens
-
-### JWT Token Management
-
-- Access tokens stored in browser's `localStorage`
-- Tokens automatically included in API requests via `Authorization: Bearer` header
-- Token expiration handled client-side with automatic logout
-
-### Securing Your Firebase Configuration
-
-**Important Security Note**: The Firebase configuration in `static/auth.js` contains an API key. While this is necessary for client-side Firebase, you should:
-
-1. Enable Firebase App Check in production
-2. Use Firebase security rules to protect your data
-3. Consider moving sensitive configuration to environment variables
-4. Enable domain restrictions in Firebase Console
+The `etf_list.csv` file contains ETF metadata. To add new ETFs, simply append rows to this file with the required columns (`ticker`, `name`, `asset_class`, `region`, etc.).
 
 ---
 

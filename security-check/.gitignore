@@ -1,0 +1,24 @@
+# Python cache
+__pycache__/
+*.pyc
+
+# Database
+sql_app.db
+
+# Logs
+エラーログ.txt
+
+# Secrets
+# Firebase service account key
+etf-webapp-firebase-adminsdk-fbsvc-96649b4b25.json
+
+# Gemini related files
+gemini-*.md
+*.backup
+# Ignore generated data directory
+/data/
+# Ignore generated static blog files
+/static/blog/
+# Ignore server log files
+server.log
+server.err

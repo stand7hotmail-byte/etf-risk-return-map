@@ -1,10 +1,8 @@
 from typing import List
 
-from fastapi import APIRouter, Depends, Query, Request
-from slowapi import Limiter # 追加
-from slowapi.util import get_remote_address # 追加
+from fastapi import APIRouter, Depends, Query
 
-from app.dependencies import get_optimization_service # get_rate_limiterは不要になる
+from app.dependencies import get_optimization_service
 from app.schemas import (
     CustomPortfolioRequest,
     TargetOptimizationRequest,
@@ -13,11 +11,6 @@ from app.schemas import (
 )
 from app.services.optimization_service import OptimizationService
 
-# 各ルーターファイルで個別のLimiterインスタンスを定義
-# このlimiterがデコレータで参照される
-limiter = Limiter(key_func=get_remote_address)
-
-
 router = APIRouter(
     prefix="/portfolio",
     tags=["Portfolio Optimization"],
@@ -25,23 +18,17 @@ router = APIRouter(
 
 
 @router.get("/efficient_frontier", response_model=OptimizationResult)
-@limiter.limit("30/minute") # レート制限を追加
 async def get_efficient_frontier(
-    request: Request, # Requestを追加
     tickers: List[str] = Query(..., description="List of tickers for analysis"),
     period: str = Query("5y", description="Period for historical data (e.g., '5y')"),
     optimization_service: OptimizationService = Depends(get_optimization_service),
-    # limiter: Limiter = Depends(get_rate_limiter) # ここは不要になる
 ) -> OptimizationResult:
     """
     Calculates the efficient frontier and tangency portfolio for a given set of ETFs.
     
     Args:
-        request: The FastAPI request object for rate limiting.
         tickers: List of ETF ticker symbols to analyze
         period: Historical data period (e.g., "1y", "5y", "10y")
-        optimization_service: The optimization service instance.
-        # limiter: The rate limiter instance. # ここは不要になる
         
     Returns:
         OptimizationResult containing:
@@ -57,21 +44,15 @@ async def get_efficient_frontier(
 
 
 @router.post("/custom_metrics", response_model=PortfolioMetrics)
-@limiter.limit("30/minute") # レート制限を追加
 async def get_custom_portfolio_metrics(
-    request: Request, # Requestを追加
-    custom_portfolio_request: CustomPortfolioRequest, # requestからcustom_portfolio_requestに名前変更
+    request: CustomPortfolioRequest,
     optimization_service: OptimizationService = Depends(get_optimization_service),
-    # limiter: Limiter = Depends(get_rate_limiter) # ここは不要になる
 ) -> PortfolioMetrics:
     """
     Calculates risk and return for a custom portfolio with specific weights.
     
     Args:
-        request: The FastAPI request object for rate limiting.
-        custom_portfolio_request: Portfolio specification including tickers, weights, and period.
-        optimization_service: The optimization service instance.
-        # limiter: The rate limiter instance. # ここは不要になる
+        request: Portfolio specification including tickers, weights, and period
         
     Returns:
         PortfolioMetrics containing risk and return values
@@ -80,26 +61,20 @@ async def get_custom_portfolio_metrics(
         HTTPException: 404 if tickers not found, 400 if weights invalid
     """
     return optimization_service.calculate_custom_portfolio_metrics(
-        custom_portfolio_request.tickers, custom_portfolio_request.weights, custom_portfolio_request.period
+        request.tickers, request.weights, request.period
     )
 
 
 @router.post("/optimize_by_return", response_model=PortfolioMetrics)
-@limiter.limit("30/minute") # レート制限を追加
 async def optimize_by_return(
-    request: Request, # Requestを追加
-    target_optimization_request: TargetOptimizationRequest, # requestからtarget_optimization_requestに名前変更
+    request: TargetOptimizationRequest,
     optimization_service: OptimizationService = Depends(get_optimization_service),
-    # limiter: Limiter = Depends(get_rate_limiter) # ここは不要になる
 ) -> PortfolioMetrics:
     """
     Optimizes a portfolio to achieve a target return while minimizing risk.
     
     Args:
-        request: The FastAPI request object for rate limiting.
-        target_optimization_request: Target return specification and tickers.
-        optimization_service: The optimization service instance.
-        # limiter: The rate limiter instance. # ここは不要になる
+        request: Target return specification and tickers
         
     Returns:
         PortfolioMetrics with optimized weights and resulting risk/return
@@ -108,26 +83,20 @@ async def optimize_by_return(
         HTTPException: 404 if tickers not found, 400 if target unachievable
     """
     return optimization_service.optimize_by_target_return(
-        target_optimization_request.tickers, target_optimization_request.target_value, target_optimization_request.period
+        request.tickers, request.target_value, request.period
     )
 
 
 @router.post("/optimize_by_risk", response_model=PortfolioMetrics)
-@limiter.limit("30/minute") # レート制限を追加
 async def optimize_by_risk(
-    request: Request, # Requestを追加
-    target_optimization_request: TargetOptimizationRequest, # requestからtarget_optimization_requestに名前変更
+    request: TargetOptimizationRequest,
     optimization_service: OptimizationService = Depends(get_optimization_service),
-    # limiter: Limiter = Depends(get_rate_limiter) # ここは不要になる
 ) -> PortfolioMetrics:
     """
     Optimizes a portfolio to match a target risk level while maximizing return.
     
     Args:
-        request: The FastAPI request object for rate limiting.
-        target_optimization_request: Target risk specification and tickers.
-        optimization_service: The optimization service instance.
-        # limiter: The rate limiter instance. # ここは不要になる
+        request: Target risk specification and tickers
         
     Returns:
         PortfolioMetrics with optimized weights and resulting risk/return
@@ -136,5 +105,5 @@ async def optimize_by_risk(
         HTTPException: 404 if tickers not found, 400 if target unachievable
     """
     return optimization_service.optimize_by_target_risk(
-        target_optimization_request.tickers, target_optimization_request.target_value, target_optimization_request.period
+        request.tickers, request.target_value, request.period
     )
