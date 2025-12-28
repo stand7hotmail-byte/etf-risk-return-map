@@ -23,6 +23,7 @@ node_modules/
 *.swp
 *.swo
 *.backup
+*.json # サービスアカウントキーを除外する汎用ルール
 
 # Exclude specific files
 .env
@@ -43,3 +44,4 @@ server.err
 pyproject.toml
 README.md
 test_db.py
+etf-webapp-firebase-adminsdk-fbsvc-96649b4b25.json # 明示的に指定 (冗長だが確実)
