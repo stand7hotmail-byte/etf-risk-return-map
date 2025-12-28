@@ -18,14 +18,19 @@ logger = logging.getLogger(__name__)
 # --- Secret Manager Helper ---
 def _get_secret(project_id: str, secret_id: str, version_id: str = "latest") -> Optional[str]:
     """Retrieves a secret from Google Cloud Secret Manager."""
+    print(f"--- DIAGNOSTIC: Attempting to access secret: '{secret_id}' in project: '{project_id}' ---")
     if not project_id:
+        print("--- DIAGNOSTIC: Project ID is missing. Cannot access secret. ---")
         return None
     try:
         client = secretmanager.SecretManagerServiceClient()
         name = f"projects/{project_id}/secrets/{secret_id}/versions/{version_id}"
         response = client.access_secret_version(name=name)
-        return response.payload.data.decode("UTF-8")
+        secret_payload = response.payload.data.decode("UTF-8")
+        print(f"--- DIAGNOSTIC: Successfully accessed secret: '{secret_id}' ---")
+        return secret_payload
     except Exception as e:
+        print(f"--- DIAGNOSTIC: FAILED to access secret '{secret_id}'. Error: {e} ---")
         logger.warning(f"Could not access secret {secret_id} in project {project_id}: {e}")
         return None
 
@@ -60,7 +65,7 @@ class Settings(BaseSettings):
     app_version: str = "0.1.0"
     risk_free_rate: float = 0.02
     cache_ttl_seconds: int = 3600
-    project_id: str = os.getenv("GCLOUD_PROJECT", "") # GAE provides GCLOUD_PROJECT
+    project_id: str = os.getenv("GCLOUD_PROJECT", "")
     cors_origins: List[str] = [
         "https://etf-risk-return-map-project.an.r.appspot.com",
         "http://localhost:8000",
@@ -71,19 +76,29 @@ class Settings(BaseSettings):
     @model_validator(mode='after')
     def set_secret_key(self) -> 'Settings':
         """Load secret_key from Secret Manager if in production, else from .env."""
-        if self.project_id:
-            logger.info(f"GCP environment detected (Project ID: {self.project_id}). Attempting to load secret from Secret Manager.")
-            secret_value = _get_secret(self.project_id, "SECRET_KEY")
+        print("--- DIAGNOSTIC: Running secret_key validator ---")
+        
+        # In GAE, GCLOUD_PROJECT is set automatically.
+        project_id_from_env = os.getenv("GCLOUD_PROJECT")
+        print(f"--- DIAGNOSTIC: Project ID from env 'GCLOUD_PROJECT': '{project_id_from_env}' ---")
+        
+        # Use the project_id from the environment if available
+        current_project_id = self.project_id or project_id_from_env
+
+        if current_project_id:
+            print(f"--- DIAGNOSTIC: GCP environment detected (Project ID: {current_project_id}). Attempting to load secret from Secret Manager. ---")
+            secret_value = _get_secret(current_project_id, "SECRET_KEY")
             if secret_value:
                 self.secret_key = secret_value
-                logger.info("Successfully loaded SECRET_KEY from Secret Manager.")
+                print("--- DIAGNOSTIC: Successfully loaded SECRET_KEY from Secret Manager into settings. ---")
 
         if not self.secret_key:
-            logger.warning("Could not load SECRET_KEY from Secret Manager or it was not available. Falling back to .env file.")
-            # If secret_key is still not set, pydantic-settings would have loaded it from .env
-            # If it's still None after that, it means it was not in .env either.
+            print("--- DIAGNOSTIC: SECRET_KEY not loaded from Secret Manager. Will rely on .env file (if available). ---")
             if not self.secret_key:
+                 print("--- DIAGNOSTIC: SECRET_KEY is still not set. It was not in .env either. This will raise an error. ---")
                  raise ValueError("SECRET_KEY not found in Secret Manager or .env file.")
+        
+        print("--- DIAGNOSTIC: Finished secret_key validator ---")
         return self
 
     class Config:
@@ -97,6 +112,7 @@ def get_settings() -> Settings:
     Returns the application settings as a dependency.
     The result is cached to avoid re-reading environment variables on every call.
     """
+    print("--- DIAGNOSTIC: get_settings() is called. ---")
     return Settings()
 
 
