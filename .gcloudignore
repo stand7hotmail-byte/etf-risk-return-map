@@ -1,3 +1,16 @@
+# Explicitly ignore directories that should never be deployed.
+security-check/
+venv/
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+*.db
+*.sqlite
+*.sqlite3
+data/
+sql_app.db
+
 # Ignore everything by default.
 *
 
@@ -15,6 +28,6 @@
 !templates/
 !templates/**
 
-# Keep these files for reference, but they won't be uploaded unless whitelisted.
+# Keep these files for reference.
 !.gcloudignore
 !.gitignore
