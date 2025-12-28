@@ -8,6 +8,7 @@ __pycache__/
 .ruff_cache/
 data/
 node_modules/
+マークダウン/ # 「??????/」に対応
 
 # Exclude specific file types and patterns
 *.db
@@ -27,9 +28,14 @@ node_modules/
 .env.*
 sql_app.db
 deploy-files.txt
-
-# Exclude Git and IDE directories
-.git/
-.gitignore
-.vscode/
-.idea/
+.gemini_commit_message.txt
+Gemini.bat
+GEMINI.md
+index_page.png
+index_page_snapshot.txt
+index_page_snapshot_loaded.txt
+sample_etf_data.csv
+start_server.bat
+test_output.txt
+server.log
+server.err
