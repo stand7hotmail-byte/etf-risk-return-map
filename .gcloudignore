@@ -9,6 +9,7 @@ __pycache__/
 data/
 node_modules/
 マークダウン/ # 「??????/」に対応
+.git/ # .git ディレクトリ全体を除外
 
 # Exclude specific file types and patterns
 *.db
@@ -39,3 +40,6 @@ start_server.bat
 test_output.txt
 server.log
 server.err
+pyproject.toml
+README.md
+test_db.py
