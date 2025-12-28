@@ -1,33 +1,35 @@
-# Explicitly ignore directories that should never be deployed.
+# Exclude directories
 security-check/
 venv/
 .venv/
+tests/
 __pycache__/
 .pytest_cache/
 .ruff_cache/
+data/
+node_modules/
+
+# Exclude specific file types and patterns
 *.db
 *.sqlite
 *.sqlite3
-data/
+*.pyc
+*.pyo
+*.log
+*.tmp
+*.bak
+*.swp
+*.swo
+*.backup
+
+# Exclude specific files
+.env
+.env.*
 sql_app.db
+deploy-files.txt
 
-# Ignore everything by default.
-*
-
-# Then, whitelist the necessary files and directories for deployment.
-!app.yaml
-!main.py
-!requirements.txt
-!etf_list.csv
-
-# Application, static, and template directories
-!app/
-!app/**
-!static/
-!static/**
-!templates/
-!templates/**
-
-# Keep these files for reference.
-!.gcloudignore
-!.gitignore
+# Exclude Git and IDE directories
+.git/
+.gitignore
+.vscode/
+.idea/
